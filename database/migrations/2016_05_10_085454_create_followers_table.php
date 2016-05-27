@@ -16,6 +16,7 @@ class CreateFollowersTable extends Migration
             $table->unsignedBigInteger('follower_id');
             $table->unsignedBigInteger('followee_id');
             $table->timestamps();
+            $table->softDeletes();
             $table->primary(['follower_id', 'followee_id']);
         });
     }

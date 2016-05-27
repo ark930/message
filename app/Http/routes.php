@@ -15,16 +15,30 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::post('login', 'UserController@login');
-Route::post('register', 'UserController@register');
+Route::post('api/register', 'UserController@register');
+Route::post('api/login', 'UserController@login');
 
-Route::get('usr/{user_id}/follow', 'UserController@getFollow');
-Route::post('usr/{user_id}/follow/{f_user_id}', 'UserController@follow');
-Route::post('usr/{user_id}/unfollow/{f_user_id}', 'UserController@unfollow');
+Route::group(
+    [
+        'prefix' => 'api',
+        'middleware' => 'auth:api',
+//        'middleware'=>'throttle:5',
+    ],
+    function () {
+        Route::get('usr/follow', 'UserController@getFollow');
+        Route::post('usr/follow/{f_user_id}', 'UserController@follow');
+        Route::post('usr/unfollow/{f_user_id}', 'UserController@unfollow');
 
-Route::get('user/{user_id}/group', 'GroupController@show');
-Route::post('user/{user_id}/group/create', 'GroupController@createGroup');
-Route::post('user/{user_id}/group/{group_id}/join', 'GroupController@join');
-Route::post('user/{user_id}/group/{group_id}/quit', 'GroupController@quit');
-Route::post('user/{user_id}/group/{group_id}/dismiss', 'GroupController@dismiss');
-Route::post('user/{user_id}/group/{group_id}/invite', 'GroupController@invite');
+        Route::get('user/group', 'GroupController@show');
+        Route::post('user/group/create', 'GroupController@createGroup');
+        Route::post('user/group/{group_id}/join', 'GroupController@join');
+        Route::post('user/group/{group_id}/quit', 'GroupController@quit');
+        Route::post('user/group/{group_id}/dismiss', 'GroupController@dismiss');
+        Route::post('user/group/{group_id}/invite', 'GroupController@invite');
+    });
+
+Route::auth();
+
+Route::get('/home', 'HomeController@index');
+
+Route::resource('test','TestController');
