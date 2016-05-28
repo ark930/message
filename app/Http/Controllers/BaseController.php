@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use Validator;
 use Auth;
+use Validator;
 
 class BaseController extends Controller
 {
@@ -15,5 +15,17 @@ class BaseController extends Controller
         ];
 
         return Validator::make($params, $rules, $messages);
+    }
+
+    protected function user()
+    {
+        return Auth::guard('api')->user();
+    }
+
+    protected function user_id()
+    {
+        $user = $this->user();
+
+        return $user['user_id'];
     }
 }

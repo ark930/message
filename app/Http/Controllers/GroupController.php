@@ -6,8 +6,6 @@ use Illuminate\Http\Request;
 
 use App\Http\Requests;
 
-use Auth;
-
 class GroupController extends BaseController
 {
     /**
@@ -17,8 +15,7 @@ class GroupController extends BaseController
      */
     public function show()
     {
-        $user = Auth::guard('api')->user();
-        $user_id = $user['id'];
+        $user_id = $this->user_id();
 
         $user = \App\User::find($user_id);
         $groups = $user->groups;
@@ -34,9 +31,8 @@ class GroupController extends BaseController
      */
     public function createGroup(Request $request)
     {
-        $user = Auth::guard('api')->user();
-        $user_id = $user['id'];
-        
+        $user_id = $this->user_id();
+
         $validator = $this->validateParams($request->all(), [
             'group_name' => 'required',
         ]);
@@ -78,8 +74,7 @@ class GroupController extends BaseController
 
     public function join($group_id)
     {
-        $user = Auth::guard('api')->user();
-        $user_id = $user['id'];
+        $user_id = $this->user_id();
 
         $user = \App\User::find($user_id);
         $groups = $user->groups()->attach($group_id);
@@ -89,8 +84,7 @@ class GroupController extends BaseController
 
     public function quit($group_id)
     {
-        $user = Auth::guard('api')->user();
-        $user_id = $user['id'];
+        $user_id = $this->user_id();
 
         $user = \App\User::find($user_id);
         $user->groups()->detach($group_id);
@@ -100,14 +94,12 @@ class GroupController extends BaseController
 
     public function invite()
     {
-        $user = Auth::guard('api')->user();
-        $user_id = $user['id'];
+        $user_id = $this->user_id();
     }
 
     public function dismiss($group_id)
     {
-        $user = Auth::guard('api')->user();
-        $user_id = $user['id'];
+        $user_id = $this->user_id();
 
         \App\Group::find($group_id)->delete();
         

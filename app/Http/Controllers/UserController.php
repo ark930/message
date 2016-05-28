@@ -6,8 +6,6 @@ use Illuminate\Http\Request;
 
 use App\Http\Requests;
 
-use Auth;
-
 class UserController extends BaseController
 {
     /**
@@ -56,8 +54,7 @@ class UserController extends BaseController
     
     public function follow(Request $request, $f_user_id)
     {
-        $user = Auth::guard('api')->user();
-        $user_id = $user['id'];
+        $user_id = $this->user_id();
 
         $validator = $this->validateParams(['f_user_id' => $f_user_id], [
             'f_user_id' => 'required|numeric|exists:users,id',
@@ -81,8 +78,7 @@ class UserController extends BaseController
     
     public function unfollow(Request $request, $f_user_id)
     {
-        $user = Auth::guard('api')->user();
-        $user_id = $user['id'];
+        $user_id = $this->user_id();
 
         $validator = $this->validateParams(['f_user_id' => $f_user_id], [
             'f_user_id' => 'required|numeric|exists:users,id',
@@ -99,13 +95,13 @@ class UserController extends BaseController
         \App\Follower::where('follower_id', $user_id)
             ->where('followee_id', $f_user_id)->delete();
 
-        return \App\Follower::where('follower_id', $user['id'])->get();
+        return \App\Follower::where('follower_id', $user_id)->get();
     }
     
     public function getFollow()
     {
-        $user = Auth::guard('api')->user();
+        $user_id = $this->user_id();
 
-        return \App\Follower::where('follower_id', $user['id'])->get();
+        return \App\Follower::where('follower_id', $user_id)->get();
     }
 }
