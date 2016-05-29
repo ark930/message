@@ -107,9 +107,9 @@ class IMService
     public function sendMessage($from, $conversationId, $message)
     {
         $body = $this->request('POST', 'rtm/messages', [
-            'from_peer' => $from,
-            'message' => $message,
-            'conv_id' => $conversationId,
+            'from_peer' => strval($from),
+            'message' => strval($message),
+            'conv_id' => strval($conversationId),
             'transient' => false,
         ]);
 

@@ -35,6 +35,9 @@ Route::group(
         Route::post('user/group/{group_id}/quit', 'GroupController@quit');
         Route::post('user/group/{group_id}/dismiss', 'GroupController@dismiss');
         Route::post('user/group/{group_id}/invite', 'GroupController@invite');
+        
+        Route::post('message', 'MessageController@sendMessage');
+        Route::get('message', 'MessageController@getMessage');
     });
 
 Route::auth();

@@ -16,7 +16,7 @@ class CreateGroupsTable extends Migration
             $table->bigIncrements('id');
             $table->string('name');
             $table->enum('type', ['user', 'group']);
-            $table->unsignedBigInteger('conv_id');
+            $table->string('conv_id', 60);
             $table->timestamps();
             $table->softDeletes();
         });
