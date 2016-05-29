@@ -110,7 +110,6 @@ class GroupController extends BaseController
         return 'success';
     }
 
-
     public function invite()
     {
         $user_id = $this->user_id();
