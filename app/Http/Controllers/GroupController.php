@@ -43,8 +43,11 @@ class GroupController extends BaseController
         
         $group_name = $request->input('group_name');
 
+        $conversation = app('IM')->createConversation($group_name, [$user_id]);
+
         $group = new \App\Group();
         $group->name = $group_name;
+        $group->conv_id = $conversation['objectId'];
         $group->save();
 
         $user = \App\User::find($user_id);
@@ -80,6 +83,10 @@ class GroupController extends BaseController
         $user = \App\User::find($user_id);
         $groups = $user->groups()->attach($group_id);
 
+        $group = \App\Group::find($group_id);
+        $conversationId = $group['conv_id'];
+        app('IM')->addMemberToConversation($conversationId, [$user_id]);
+
         return $groups;
     }
 
@@ -95,6 +102,10 @@ class GroupController extends BaseController
 
         $user = \App\User::find($user_id);
         $user->groups()->detach($group_id);
+
+        $group = \App\Group::find($group_id);
+        $conversationId = $group['conv_id'];
+        app('IM')->removeMemberToConversation($conversationId, [$user_id]);
 
         return 'success';
     }

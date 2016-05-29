@@ -156,7 +156,8 @@ return [
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
         
-        Jlapp\Swaggervel\SwaggervelServiceProvider::class,
+        App\Providers\IMServiceProvider::class,
+
     ],
 
     /*
