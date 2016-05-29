@@ -43,11 +43,6 @@ class GroupController extends BaseController
         
         $group_name = $request->input('group_name');
 
-//        $client = new \GuzzleHttp\Client();
-//        $res = $client->get('https://api.github.com/user', ['auth' =>  ['wangxiao_8800@qq.com', '722131wxw']]);
-//        echo $res->getStatusCode(); // 200
-//        echo $res->getBody();
-
         $group = new \App\Group();
         $group->name = $group_name;
         $group->save();
@@ -72,6 +67,12 @@ class GroupController extends BaseController
 ////        $group->createGroup($group_name);
 //    }
 
+    /**
+     * 加入用户组
+     *
+     * @param $group_id
+     * @return mixed
+     */
     public function join($group_id)
     {
         $user_id = $this->user_id();
@@ -82,6 +83,12 @@ class GroupController extends BaseController
         return $groups;
     }
 
+    /**
+     * 退出用户组
+     *
+     * @param $group_id
+     * @return string
+     */
     public function quit($group_id)
     {
         $user_id = $this->user_id();
@@ -92,11 +99,18 @@ class GroupController extends BaseController
         return 'success';
     }
 
+
     public function invite()
     {
         $user_id = $this->user_id();
     }
 
+    /**
+     * 解散用户组
+     * 
+     * @param $group_id
+     * @return array
+     */
     public function dismiss($group_id)
     {
         $user_id = $this->user_id();

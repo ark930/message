@@ -9,6 +9,8 @@ use App\Http\Requests;
 class UserController extends BaseController
 {
     /**
+     * 登录
+     *
      * @param Request $request
      * @return mixed
      */
@@ -31,11 +33,17 @@ class UserController extends BaseController
         if ($validator->fails()) {
             return response()->json(['msg' => $validator->errors()->first()], 400);
         }
-
+ 
         $username = $request->input('username');
         return \App\User::where('tel', $username)->first();
     }
 
+    /**
+     * 注册
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function register(Request $request)
     {
         $validator = $this->validateParams($request->all(), [
@@ -51,7 +59,14 @@ class UserController extends BaseController
 
         return response()->json(['msg' => 'success'], 400);
     }
-    
+
+    /**
+     * 关注用户
+     *
+     * @param Request $request
+     * @param $f_user_id
+     * @return \App\Follower|\Illuminate\Http\JsonResponse
+     */
     public function follow(Request $request, $f_user_id)
     {
         $user_id = $this->user_id();
@@ -75,7 +90,14 @@ class UserController extends BaseController
 
         return $follower;
     }
-    
+
+    /**
+     * 取消关注
+     *
+     * @param Request $request
+     * @param $f_user_id
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function unfollow(Request $request, $f_user_id)
     {
         $user_id = $this->user_id();
@@ -97,8 +119,13 @@ class UserController extends BaseController
 
         return \App\Follower::where('follower_id', $user_id)->get();
     }
-    
-    public function getFollow()
+
+    /**
+     * 获取被关注的人
+     *
+     * @return mixed
+     */
+    public function getFollow(Request $request)
     {
         $user_id = $this->user_id();
 

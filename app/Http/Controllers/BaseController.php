@@ -24,8 +24,6 @@ class BaseController extends Controller
 
     protected function user_id()
     {
-        $user = $this->user();
-
-        return $user['user_id'];
+        return Auth::guard('api')->id();
     }
 }
