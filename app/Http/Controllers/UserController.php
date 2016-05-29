@@ -16,16 +16,6 @@ class UserController extends BaseController
      */
     public function login(Request $request)
     {
-//        try {
-//            $this->validate($request, [
-//                'username' => 'required|exists:users,tel',
-//            ], [
-//                'exists' => 'The attribute field is required.',
-//            ]);
-//        } catch (ValidationException $e) {
-//            return response()->json($e->getMessage(), 400);
-//        }
-
         $validator = $this->validateParams($request->all(), [
             'username' => 'required|exists:users,tel',
         ]);
@@ -57,7 +47,7 @@ class UserController extends BaseController
         $username = $request->input('username');
         \App\User::create(['tel' => $username, 'api_token' => str_random(60)]);
 
-        return response()->json(['msg' => 'success'], 400);
+        return response()->json(['msg' => 'success']);
     }
 
     /**
