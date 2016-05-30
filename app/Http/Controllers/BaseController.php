@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Auth;
 use Validator;
+use Exception;
+
 
 class BaseController extends Controller
 {
@@ -14,7 +16,11 @@ class BaseController extends Controller
             'unique' => ':attribute 已存在.',
         ];
 
-        return Validator::make($params, $rules, $messages);
+        $validator = Validator::make($params, $rules, $messages);
+
+        if ($validator->fails()) {
+            throw new Exception($validator->errors()->first(), 400);
+        }
     }
 
     protected function user()

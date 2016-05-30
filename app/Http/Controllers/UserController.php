@@ -16,14 +16,10 @@ class UserController extends BaseController
      */
     public function login(Request $request)
     {
-        $validator = $this->validateParams($request->all(), [
+        $this->validateParams($request->all(), [
             'username' => 'required|exists:users,tel',
         ]);
 
-        if ($validator->fails()) {
-            return response()->json(['msg' => $validator->errors()->first()], 400);
-        }
- 
         $username = $request->input('username');
         return \App\User::where('tel', $username)->first();
     }
@@ -36,13 +32,9 @@ class UserController extends BaseController
      */
     public function register(Request $request)
     {
-        $validator = $this->validateParams($request->all(), [
+        $this->validateParams($request->all(), [
             'username' => 'required|unique:users,tel',
         ]);
-
-        if ($validator->fails()) {
-            return response()->json(['msg' => $validator->errors()->first()], 400);
-        }
 
         $username = $request->input('username');
         \App\User::create(['tel' => $username, 'api_token' => str_random(60)]);
@@ -61,21 +53,21 @@ class UserController extends BaseController
     {
         $user_id = $this->user_id();
 
-        $validator = $this->validateParams(['f_user_id' => $f_user_id], [
+        $this->validateParams(compact('f_user_id'), [
             'f_user_id' => 'required|numeric|exists:users,id',
         ]);
-
-        if ($validator->fails()) {
-            return response()->json(['msg' => $validator->errors()->first()], 400);
-        }
 
         if($user_id == $f_user_id) {
             return response()->json(['msg' => '无法关注自己'], 400);
         }
 
+        $group_name = "私聊: $user_id, $f_user_id";
+        $conversation = app('IM')->createConversation($group_name, [$user_id, $f_user_id]);
+
         $follower = new \App\Follower();
         $follower->follower_id = intval($user_id);
         $follower->followee_id = intval($f_user_id);
+        $f_user_id->conv_id = $conversation['objectId'];
         $follower->save();
 
         return $follower;
@@ -92,13 +84,9 @@ class UserController extends BaseController
     {
         $user_id = $this->user_id();
 
-        $validator = $this->validateParams(['f_user_id' => $f_user_id], [
+        $this->validateParams(compact('f_user_id'), [
             'f_user_id' => 'required|numeric|exists:users,id',
         ]);
-
-        if ($validator->fails()) {
-            return response()->json(['msg' => $validator->errors()->first()], 400);
-        }
 
         if($user_id == $f_user_id) {
             return response()->json(['msg' => '无法关注自己'], 400);

@@ -33,14 +33,10 @@ class GroupController extends BaseController
     {
         $user_id = $this->user_id();
 
-        $validator = $this->validateParams($request->all(), [
+        $this->validateParams($request->all(), [
             'group_name' => 'required',
         ]);
 
-        if ($validator->fails()) {
-            return response()->json(['msg' => $validator->errors()->first()], 400);
-        }
-        
         $group_name = $request->input('group_name');
 
         $conversation = app('IM')->createConversation($group_name, [$user_id]);
