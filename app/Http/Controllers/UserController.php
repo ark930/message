@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Exceptions\BadRequestException;
+use App\Follower;
+use App\User;
 use Illuminate\Http\Request;
 
 use App\Http\Requests;
@@ -22,7 +24,7 @@ class UserController extends BaseController
         ]);
 
         $username = $request->input('username');
-        return \App\User::where('tel', $username)->first();
+        return User::where('tel', $username)->first();
     }
 
     /**
@@ -38,7 +40,7 @@ class UserController extends BaseController
         ]);
 
         $username = $request->input('username');
-        \App\User::create(['tel' => $username, 'api_token' => str_random(60)]);
+        User::create(['tel' => $username, 'api_token' => str_random(60)]);
 
         return response()->json(['msg' => 'success']);
     }
@@ -48,7 +50,8 @@ class UserController extends BaseController
      *
      * @param Request $request
      * @param $f_user_id
-     * @return \App\Follower|\Illuminate\Http\JsonResponse
+     * @return \App\Follower
+     * @throws BadRequestException
      */
     public function follow(Request $request, $f_user_id)
     {
@@ -65,7 +68,7 @@ class UserController extends BaseController
         $group_name = "私聊: $user_id, $f_user_id";
         $conversation = app('IM')->createConversation($group_name, [$user_id, $f_user_id]);
 
-        $follower = new \App\Follower();
+        $follower = new Follower();
         $follower->follower_id = intval($user_id);
         $follower->followee_id = intval($f_user_id);
         $f_user_id->conv_id = $conversation['objectId'];
@@ -79,7 +82,8 @@ class UserController extends BaseController
      *
      * @param Request $request
      * @param $f_user_id
-     * @return \Illuminate\Http\JsonResponse
+     * @return mixed
+     * @throws BadRequestException
      */
     public function unfollow(Request $request, $f_user_id)
     {
@@ -93,21 +97,22 @@ class UserController extends BaseController
             throw new BadRequestException('无法关注自己', 400);
         }
 
-        \App\Follower::where('follower_id', $user_id)
+        Follower::where('follower_id', $user_id)
             ->where('followee_id', $f_user_id)->delete();
 
-        return \App\Follower::where('follower_id', $user_id)->get();
+        return Follower::where('follower_id', $user_id)->get();
     }
 
     /**
      * 获取被关注的人
      *
+     * @param Request $request
      * @return mixed
      */
     public function getFollow(Request $request)
     {
         $user_id = $this->user_id();
 
-        return \App\Follower::where('follower_id', $user_id)->get();
+        return Follower::where('follower_id', $user_id)->get();
     }
 }

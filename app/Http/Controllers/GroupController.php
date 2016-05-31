@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Group;
+use App\User;
 use Illuminate\Http\Request;
 
 use App\Http\Requests;
@@ -17,7 +19,7 @@ class GroupController extends BaseController
     {
         $user_id = $this->user_id();
 
-        $user = \App\User::find($user_id);
+        $user = User::find($user_id);
         $groups = $user->groups;
 
         return $groups;
@@ -41,12 +43,12 @@ class GroupController extends BaseController
 
         $conversation = app('IM')->createConversation($group_name, [$user_id]);
 
-        $group = new \App\Group();
+        $group = new Group();
         $group->name = $group_name;
         $group->conv_id = $conversation['objectId'];
         $group->save();
 
-        $user = \App\User::find($user_id);
+        $user = User::find($user_id);
         $user->groups()->attach($group->id, ['privilege' => 'none']);
 
         return $user;
@@ -62,10 +64,10 @@ class GroupController extends BaseController
     {
         $user_id = $this->user_id();
 
-        $user = \App\User::find($user_id);
+        $user = User::find($user_id);
         $groups = $user->groups()->attach($group_id);
 
-        $group = \App\Group::find($group_id);
+        $group = Group::find($group_id);
         $conversationId = $group['conv_id'];
         app('IM')->addMemberToConversation($conversationId, [$user_id]);
 
@@ -82,10 +84,10 @@ class GroupController extends BaseController
     {
         $user_id = $this->user_id();
 
-        $user = \App\User::find($user_id);
+        $user = User::find($user_id);
         $user->groups()->detach($group_id);
 
-        $group = \App\Group::find($group_id);
+        $group = Group::find($group_id);
         $conversationId = $group['conv_id'];
         app('IM')->removeMemberToConversation($conversationId, [$user_id]);
 
@@ -107,7 +109,7 @@ class GroupController extends BaseController
     {
         $user_id = $this->user_id();
 
-        \App\Group::find($group_id)->delete();
+        Group::find($group_id)->delete();
         
         return [
             $user_id, $group_id
