@@ -45,7 +45,7 @@ class Handler extends ExceptionHandler
      */
     public function render($request, Exception $e)
     {
-        if ($e instanceof Exception) {
+        if ($e instanceof BadRequestException) {
             return response()->json(['msg' => $e->getMessage()], $e->getCode());
         }
 

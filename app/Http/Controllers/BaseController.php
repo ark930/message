@@ -2,10 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\BadRequestException;
 use Auth;
 use Validator;
-use Exception;
-
 
 class BaseController extends Controller
 {
@@ -19,7 +18,7 @@ class BaseController extends Controller
         $validator = Validator::make($params, $rules, $messages);
 
         if ($validator->fails()) {
-            throw new Exception($validator->errors()->first(), 400);
+            throw new BadRequestException($validator->errors()->first(), 400);
         }
     }
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\BadRequestException;
 use Illuminate\Http\Request;
 
 use App\Http\Requests;
@@ -58,7 +59,7 @@ class UserController extends BaseController
         ]);
 
         if($user_id == $f_user_id) {
-            return response()->json(['msg' => '无法关注自己'], 400);
+            throw new BadRequestException('无法关注自己', 400);
         }
 
         $group_name = "私聊: $user_id, $f_user_id";
@@ -89,7 +90,7 @@ class UserController extends BaseController
         ]);
 
         if($user_id == $f_user_id) {
-            return response()->json(['msg' => '无法关注自己'], 400);
+            throw new BadRequestException('无法关注自己', 400);
         }
 
         \App\Follower::where('follower_id', $user_id)

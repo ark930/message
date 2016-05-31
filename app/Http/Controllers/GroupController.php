@@ -52,20 +52,6 @@ class GroupController extends BaseController
         return $user;
     }
 
-//    public function create(Request $request, $user_id)
-//    {
-//        $group_name = $request->input('name');
-//
-//        $group = new \App\Group();
-//        $group->name = $group_name;
-//        $group->save();
-//        $group->user_groups()->save(new \App\UserGroup());
-//
-//        return \App\Group::find($group->id);
-////        $group = new \App\Group();
-////        $group->createGroup($group_name);
-//    }
-
     /**
      * 加入用户组
      *
