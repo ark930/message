@@ -12,6 +12,6 @@ class Group extends Model
     
     public function users()
     {
-        return $this->belongsToMany('App\User', 'user_groups');
+        return $this->belongsToMany('App\Models\User', 'user_groups');
     }
 }
