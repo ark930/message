@@ -20,7 +20,7 @@ Route::post('api/login', 'UserController@login');
 
 Route::group(
     [
-        'prefix' => 'api',
+        'prefix' => 'api/v1',
         'middleware' => 'auth:api',
 //        'middleware'=>'throttle:5',
     ],
