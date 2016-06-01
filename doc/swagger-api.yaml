@@ -1,0 +1,235 @@
+###########################################################
+#
+# 将一下文本复制到 http://editor.swagger.io 来测试 Message API
+#
+# 同时为了开启跨域请求，服务器端添加如下代码:
+#   header('Access-Control-Allow-Origin: http://editor.swagger.io');
+#   header('Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept, Authorization');
+#
+# 带 Auth 标签的接口需要设置 api_token, 如：Bearer T6AW7rhs9IEyZ5LuWgqhONvgwfJOzFFyb1zhyBwOr1LtoPtK42UFXeRjC0CU
+#
+###########################################################
+
+swagger: '2.0'
+info:
+  title: Message API
+  version: "0.1.0"
+# 主域名
+host: localhost:8000
+# 支持的协议
+schemes:
+  - http
+  - https
+consumes:
+  - application/json
+produces:
+  - application/json
+# 开启 Bearer Token 认证
+securityDefinitions:
+  api_token:
+    type: apiKey
+    name: Authorization
+    in: header
+basePath: /api/v1
+paths:
+  /register:
+    post:
+      summary: 注册
+      tags:
+        - User
+      parameters:
+        - name: Username
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/Username'
+      responses:
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /login:
+    post:
+      summary: 登录
+      tags:
+        - User
+      parameters:
+        - name: Username
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/Username'
+      responses:
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /user/follow/{followee_id}:
+    parameters:
+      - $ref: '#/parameters/followee_id'
+    post:
+      security:
+        - api_token: []
+      summary: 关注用户
+      tags:
+        - User
+        - Auth
+      responses:
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /user/unfollow/{followee_id}:
+    parameters:
+      - $ref: '#/parameters/followee_id'
+    post:
+      security:
+        - api_token: []
+      summary: 取消关注
+      tags:
+        - User
+        - Auth
+      responses:
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /user/follow:
+    get:
+      security:
+        - api_token: []
+      summary: 获取被关注的人
+      tags:
+        - User
+        - Auth
+      responses:
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /user/group/create:
+    post:
+      security:
+        - api_token: []
+      summary: 创建用户组
+      tags:
+        - Group
+        - Auth
+      parameters:
+        - name: Group name
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/GroupName'
+      responses:
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /user/group/{group_id}/join:
+    parameters:
+      - $ref: '#/parameters/group_id'
+    post:
+      security:
+        - api_token: []
+      summary: 加入用户组
+      tags:
+        - Group
+        - Auth
+      responses:
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /user/group:
+    get:
+      security:
+        - api_token: []
+      summary: 显示用户组
+      tags:
+        - Group
+        - Auth
+      responses:
+        200:
+          description: 用户组列表
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Groups'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /user/group/{group_id}/dismiss:
+    parameters:
+      - $ref: '#/parameters/group_id'
+    post:
+      security:
+        - api_token: []
+      summary: 解散用户组
+      tags:
+        - Group
+        - Auth
+      responses:
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /user/group/{group_id}/quit:
+    parameters:
+      - $ref: '#/parameters/group_id'
+    post:
+      security:
+        - api_token: []
+      summary: 退出用户组
+      tags:
+        - Group
+
+      responses:
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+parameters:
+  group_id:
+    name: group_id
+    in: path
+    description: 用户组 ID
+    type: number
+    required: true
+  followee_id:
+    name: followee_id
+    in: path
+    description: 被关注者的 User ID
+    type: number
+    required: true
+definitions:
+  Username:
+    type: object
+    properties:
+      username:
+        type: string
+  GroupName:
+    type: object
+    properties:
+      group_name:
+        type: string
+  Groups:
+    type: object
+    items:
+      $ref: '#/definitions/Group'
+  Group:
+    type: object
+    properties:
+      id:
+        type: integer
+        format: int64
+        description: 用户组 ID
+  Error:
+    type: object
+    properties:
+      code:
+        type: integer
+        format: int32
+      msg:
+        type: string
