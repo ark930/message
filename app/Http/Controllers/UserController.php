@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Exceptions\BadRequestException;
-use App\Follower;
-use App\User;
+use App\Models\Follower;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 use App\Http\Requests;
