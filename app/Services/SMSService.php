@@ -1,0 +1,57 @@
+<?php
+
+namespace App\Services;
+
+
+use App\Contracts\SMSServiceContract;
+use App\Exceptions\BadRequestException;
+use GuzzleHttp\Client;
+
+class SMSService implements SMSServiceContract
+{
+    protected $apiKey = null;
+    protected $client = null;
+
+    const BASE_URL = 'https://sms.yunpian.com/v2/';
+
+    public function __construct()
+    {
+//        $this->apiKey = config('yunpian.api_key');
+        $this->apiKey = 'a183ee83ac0372a9e4f67cb56c6f3e5c';
+
+        $this->client = new Client(['base_uri' => self::BASE_URL]);
+    }
+
+    public function SendSMS($tel, $message)
+    {
+        $body = $this->request('POST', 'sms/single_send.json', [
+            'apikey' => $this->apiKey,
+            'mobile' => $tel,
+            'text' => $message,
+        ]);
+
+        return $body;
+    }
+
+    private function request($method, $url, $data = null)
+    {
+        if(empty($data)) {
+            $options = [];
+        } else {
+            $options = [
+                'form_params' => $data,
+            ];
+        }
+
+        try {
+            $res = $this->client->request($method, $url, $options);
+        } catch (\Exception $e) {
+            throw new BadRequestException($e->getMessage(), $e->getCode());
+        }
+
+        $body =  $res->getBody();
+
+        return \GuzzleHttp\json_decode($body, true);
+    }
+
+}
