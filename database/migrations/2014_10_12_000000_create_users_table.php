@@ -18,8 +18,10 @@ class CreateUsersTable extends Migration
             $table->string('nick_name')->nullable();
             $table->string('email')->unique()->nullable();
             $table->string('tel')->unique();
-            $table->string('token')->nullable();
-            $table->string('api_token', 60)->unique();
+            $table->string('api_token', 60);
+            $table->string('verify_code', 10)->nullable();
+            $table->timestamp('verify_code_expire_at')->nullable();
+            $table->timestamp('verify_code_refresh_at')->nullable();
             $table->rememberToken();
             $table->timestamps();
             $table->softDeletes();

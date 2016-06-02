@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Contracts\SMSServiceContract;
 use App\Exceptions\BadRequestException;
 use App\Models\Follower;
 use App\Models\User;
@@ -12,19 +13,72 @@ use App\Http\Requests;
 class UserController extends BaseController
 {
     /**
-     * 登录
+     * 获取登录验证码
      *
      * @param Request $request
-     * @return mixed
+     * @param SMSServiceContract $SMS
+     * @return \Illuminate\Http\JsonResponse
+     * @throws BadRequestException
      */
-    public function login(Request $request)
+    public function loginVerifyCode(Request $request, SMSServiceContract $SMS)
     {
         $this->validateParams($request->all(), [
             'username' => 'required|exists:users,tel',
         ]);
 
         $username = $request->input('username');
-        return User::where('tel', $username)->first();
+
+        $user = User::where('tel', $username)->first();
+        $verify_code_refresh_time = strtotime($user['verify_code_refresh_at']);
+        if(!empty($user['verify_code_refresh_at']) && $verify_code_refresh_time > time()) {
+            $seconds = $verify_code_refresh_time - time();
+            throw new BadRequestException("请求失败, 请在 $seconds 秒后重新请求", 400);
+        }
+
+        $verify_code = mt_rand(100000, 999999);
+        User::where('tel', $username)
+            ->update([
+                'verify_code' => $verify_code,
+                'verify_code_refresh_at' => date('Y-m-d H:i:s', strtotime("+1 minute")),
+                'verify_code_expire_at' => date('Y-m-d H:i:s', strtotime("+2 minutes")),
+            ]);
+
+        // 发送验证码短信
+        $message = "【云片网】您的验证码是$verify_code";
+        $SMS->SendSMS($username, $message);
+
+        return response()->json(['msg' => 'success']);
+    }
+
+    /**
+     * 登录
+     *
+     * @param Request $request
+     * @return mixed
+     * @throws BadRequestException
+     */
+    public function login(Request $request)
+    {
+        $this->validateParams($request->all(), [
+            'username' => 'required|exists:users,tel',
+            'verify_code' => 'required',
+        ]);
+
+        $username = $request->input('username');
+        $verify_code = $request->input('verify_code');
+        $user = User::where('tel', $username)
+            ->where('verify_code', $verify_code)
+            ->first();
+
+        if(empty($user)) {
+            throw new BadRequestException('登录失败', 400);
+        }
+
+        if(strtotime($user['verify_code_expire_at']) <= time()) {
+            throw new BadRequestException('验证码失效, 请重新获取', 400);
+        }
+
+        return $user;
     }
 
     /**
@@ -50,7 +104,7 @@ class UserController extends BaseController
      *
      * @param Request $request
      * @param $f_user_id
-     * @return \App\Follower
+     * @return Follower
      * @throws BadRequestException
      */
     public function follow(Request $request, $f_user_id)
