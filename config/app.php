@@ -52,7 +52,7 @@ return [
     |
     */
 
-    'timezone' => 'UTC',
+    'timezone' => 'Asia/Shanghai',
 
     /*
     |--------------------------------------------------------------------------
@@ -157,6 +157,7 @@ return [
         App\Providers\RouteServiceProvider::class,
         
         App\Providers\IMServiceProvider::class,
+        App\Providers\SMSServiceProvider::class,
 
     ],
 
