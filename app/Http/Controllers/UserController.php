@@ -40,7 +40,7 @@ class UserController extends BaseController
             ->update([
                 'verify_code' => $verify_code,
                 'verify_code_refresh_at' => date('Y-m-d H:i:s', strtotime("+1 minute")),
-                'verify_code_expire_at' => date('Y-m-d H:i:s', strtotime("+2 minutes")),
+                'verify_code_expire_at' => date('Y-m-d H:i:s', strtotime("+5 minutes")),
             ]);
 
         // 发送验证码短信
@@ -78,6 +78,10 @@ class UserController extends BaseController
             throw new BadRequestException('验证码失效, 请重新获取', 400);
         }
 
+        // 登录成功后, 验证码立即失效
+        User::where('tel', $username)
+            ->update(['verify_code_expire_at' => null]);
+
         return $user;
     }
 
@@ -94,7 +98,7 @@ class UserController extends BaseController
         ]);
 
         $username = $request->input('username');
-        User::create(['tel' => $username, 'api_token' => str_random(60)]);
+        User::create(['tel' => $username, 'api_token' => str_random(24)]);
 
         return response()->json(['msg' => 'success']);
     }

@@ -16,8 +16,7 @@ class SMSService implements SMSServiceContract
 
     public function __construct()
     {
-//        $this->apiKey = config('yunpian.api_key');
-        $this->apiKey = 'a183ee83ac0372a9e4f67cb56c6f3e5c';
+        $this->apiKey = config('yunpian.api_key');
 
         $this->client = new Client(['base_uri' => self::BASE_URL]);
     }
