@@ -15,7 +15,7 @@ class CreateUserGroupsTable extends Migration
         Schema::create('user_groups', function (Blueprint $table) {
             $table->unsignedBigInteger('user_id');
             $table->unsignedBigInteger('group_id');
-            $table->enum('privilege', ['owner', 'none']);
+            $table->enum('privilege', ['owner', 'member'])->default('member');
             $table->primary(['user_id', 'group_id']);
             $table->timestamps();
         });
