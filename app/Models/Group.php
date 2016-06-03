@@ -9,6 +9,15 @@ use Illuminate\Http\Request;
 class Group extends Model
 {
     use SoftDeletes;
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array
+     */
+    protected $fillable = [
+        'name', 'type', 'conv_id',
+    ];
     
     public function users()
     {

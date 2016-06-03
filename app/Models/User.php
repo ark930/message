@@ -2,18 +2,12 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
 class User extends Authenticatable
 {
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array
-     */
-    protected $fillable = [
-        'name', 'email', 'password', 'tel', 'api_token',
-    ];
+    use SoftDeletes;
 
     /**
      * The attributes that should be hidden for arrays.
@@ -21,7 +15,7 @@ class User extends Authenticatable
      * @var array
      */
     protected $hidden = [
-        'verify_code', 'password', 'remember_token', 'deleted_at'
+        'verify_code', 'verify_code_expire_at', 'verify_code_refresh_at', 'deleted_at',
     ];
 
     public function groups()

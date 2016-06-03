@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Contracts\SMSServiceContract;
 use App\Exceptions\BadRequestException;
 use App\Models\Follower;
+use App\Models\Group;
 use App\Models\User;
+use App\Models\UserGroup;
 use Illuminate\Http\Request;
 
 use App\Http\Requests;
@@ -119,17 +121,47 @@ class UserController extends BaseController
             'f_user_id' => 'required|numeric|exists:users,id',
         ]);
 
+        // 关注者与被关注则相同时
         if($user_id == $f_user_id) {
             throw new BadRequestException('无法关注自己', 400);
         }
 
-        $group_name = "私聊: $user_id, $f_user_id";
-        $conversation = app('IM')->createConversation($group_name, [$user_id, $f_user_id]);
+        $follower = Follower::where('follower_id', $user_id)
+            ->where('followee_id', $f_user_id)
+            ->get();
+        if(!$follower->isEmpty()) {
+            // 已关注被关注者时
+            throw new BadRequestException('已关注', 400);
+        }
+
+        $follower = Follower::where('follower_id', $f_user_id)
+            ->where('followee_id', $user_id)
+            ->get();
+        if(!$follower->isEmpty()) {
+            // 被关注者已关注专注者时, 获取 group_id
+            $group = $follower->group;
+            $group_id = $group['id'];
+        } else {
+            // 双方互不关注时, 创建对话
+            $group_name = "私聊: $user_id, $f_user_id";
+            $conversation = app('IM')->createConversation($group_name, [$user_id, $f_user_id]);
+            $conv_id = $conversation['objectId'];
+
+            $group = Group::create([
+                'name' => $group_name,
+                'type' => 'private',
+                'conv_id' => $conv_id,
+            ]);
+            $group_id = $group['id'];
+
+            UserGroup::create(['user_id' => $user_id, 'group_id' => $group_id]);
+            UserGroup::create(['user_id' => $f_user_id, 'group_id' => $group_id]);
+        }
 
         $follower = new Follower();
         $follower->follower_id = intval($user_id);
         $follower->followee_id = intval($f_user_id);
-        $f_user_id->conv_id = $conversation['objectId'];
+        $follower->group_id = $group_id;
         $follower->save();
 
         return $follower;
@@ -152,11 +184,12 @@ class UserController extends BaseController
         ]);
 
         if($user_id == $f_user_id) {
-            throw new BadRequestException('无法关注自己', 400);
+            throw new BadRequestException('无法对自己取消关注', 400);
         }
 
         Follower::where('follower_id', $user_id)
-            ->where('followee_id', $f_user_id)->delete();
+            ->where('followee_id', $f_user_id)
+            ->delete();
 
         return Follower::where('follower_id', $user_id)->get();
     }
@@ -171,6 +204,20 @@ class UserController extends BaseController
     {
         $user_id = $this->user_id();
 
-        return Follower::where('follower_id', $user_id)->get();
+        $followers = Follower::where('follower_id', $user_id)->get();
+
+        $users = [];
+        foreach ($followers as $follower) {
+            $user = $follower->followee_user;
+            $group = $follower->group;
+
+            $users[] = [
+                'id' => $user['id'],
+                'nick_name' => $user['nick_name'],
+                'conv_id' => $group['conv_id'],
+            ];
+        }
+
+        return $users;
     }
 }
