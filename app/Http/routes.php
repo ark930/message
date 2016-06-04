@@ -12,7 +12,7 @@
 */
 
 Route::group(['prefix' => 'api/v1'], function() {
-    Route::group(['middleware' => 'throttle:10'], function() {
+    Route::group(['middleware' => 'throttle:10000'], function() {
         Route::post('register', 'UserController@register');
         Route::post('login', 'UserController@login');
         Route::post('verifycode', 'UserController@loginVerifyCode');
@@ -38,4 +38,9 @@ Route::group(['prefix' => 'api/v1'], function() {
         Route::post('message', 'MessageController@sendMessage');
         Route::get('message', 'MessageController@getMessage');
     });
+});
+
+Route::group([], function() {
+    Route::get('login', 'Page\UserController@login');
+    Route::get('im', 'Page\IMController@main');
 });

@@ -6,6 +6,7 @@ namespace App\Services;
 use App\Contracts\SMSServiceContract;
 use App\Exceptions\BadRequestException;
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\RequestException;
 
 class SMSService implements SMSServiceContract
 {
@@ -44,6 +45,12 @@ class SMSService implements SMSServiceContract
 
         try {
             $res = $this->client->request($method, $url, $options);
+        } catch (RequestException $e) {
+            $code = $e->getResponse()->getStatusCode();
+            $body = $e->getResponse()->getBody();
+            $message = \GuzzleHttp\json_decode($body, true)['msg'];
+
+            throw new BadRequestException($message, $code);
         } catch (\Exception $e) {
             throw new BadRequestException($e->getMessage(), $e->getCode());
         }
