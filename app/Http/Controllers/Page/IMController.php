@@ -11,6 +11,6 @@ class IMController extends Controller
 {
     public function main()
     {
-        return 'Message main page';
+        return view('im');
     }
 }

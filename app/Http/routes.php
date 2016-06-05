@@ -41,6 +41,10 @@ Route::group(['prefix' => 'api/v1'], function() {
 });
 
 Route::group([], function() {
+    Route::get('/', function() {
+        return redirect('login');
+    });
+
     Route::get('login', 'Page\UserController@login');
     Route::get('im', 'Page\IMController@main');
 });

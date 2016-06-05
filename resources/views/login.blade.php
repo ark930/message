@@ -3,7 +3,7 @@
 <html>
 <head lang="en">
     <meta charset="UTF-8">
-    <title>Login Page | Amaze UI Example</title>
+    <title>Login Page | Message</title>
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="format-detection" content="telephone=no">
@@ -44,13 +44,13 @@
                 <div class="am-u-sm-10">
                     <input type="text" name="" id="verifyCode" value="" placeholder="验证码" required>
                 </div>
-                <button id="requireVerifyCode" class="am-btn am-btn-primary am-btn-sm am-fl am-u-sm-2">获取</button>
+                <div class="am-u-sm-2">
+                    <button id="requireVerifyCode" class="am-btn am-btn-primary am-radius am-btn-sm am-fl">获 取</button>
+                </div>
             </div>
-
             <br>
-            <br />
             <div class="am-cf">
-                <input id="submit" type="submit" name="" value="登 录" class="am-btn am-btn-primary am-btn-sm am-fl">
+                <input id="submit" type="submit" name="" value="登 录" class="am-btn am-btn-primary am-radius am-btn-block">
             </div>
         </form>
     </div>
@@ -75,7 +75,7 @@
                 },
                 type:'post',
                 dataType:'json',
-                success:function(data) {
+                success: function(data) {
                     console.log('success');
                     countdown(60, $('#requireVerifyCode'));
                 },
@@ -107,8 +107,11 @@
                 },
                 type:'post',
                 dataType:'json',
-                success:function(data) {
+                success:  function(data) {
                     console.log('login success');
+                    localStorage.api_token = data.api_token;
+                    localStorage.nick_name = data.nick_name;
+
                     window.location.href = 'im';
                 },
                 error : errorHandler
