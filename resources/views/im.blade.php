@@ -43,6 +43,20 @@
 <div class="am-cf admin-main">
     <!-- sidebar start -->
     <div class="admin-sidebar am-offcanvas" id="admin-offcanvas">
+
+        <div id="doc-dropdown-justify-js">
+            <div class="am-dropdown" id="doc-dropdown-js">
+                <div class="am-input-group am-input-group-sm">
+                    <input type="text" class="am-form-field" id="searchInput" placeholder="昵称 / 手机号">
+                    <span class="am-input-group-btn">
+                        <button class="am-btn am-btn-default" type="button" id="searchButton">搜索</button>
+                    </span>
+                </div>
+
+                <ul class="am-dropdown-content" id="searchDropdownList"></ul>
+            </div>
+        </div>
+
         <div class="am-offcanvas-bar admin-offcanvas-bar">
             <ul class="am-list admin-sidebar-list">
                 <li>
@@ -119,46 +133,79 @@
     $(function() {
         $('#title').text('Message | ' + localStorage.nick_name);
         var api_token = localStorage.api_token;
-
         if(!api_token) {
             window.location.href = '/';
         }
 
-        $.ajax({
-            url:'api/v1/user/follow',
-            type:'get',
-            dataType:'json',
-            beforeSend: function(xhr, settings) { xhr.setRequestHeader('Authorization','Bearer ' + api_token); },
-            success: function(data) {
-                $.each(data, function(index, value) {
-                    var nickName = value.nick_name;
-                    $('#collapse-followee').append('<li><a href="#' + value.id + '"> ' + nickName +
-                            '<span class="am-badge am-badge-warning am-round am-margin-right am-fr"></span></a></li>');
 
-                    // 将数据存入 local storage
-                    var followees = localStorage.followees;
-                    if(followees === undefined) {
-                        followees = [];
-                    } else {
-                        followees = JSON.parse(followees);
-                    }
-
-                    var exist = false;
-                    $.each(followees, function(i, v) {
-                        if(v.id == value.id) {
-                            exist = true;
-                            return false;
-                        }
-                    });
-                    if(exist == false) {
-                        followees.push(value);
-                    }
-                    localStorage.followees = JSON.stringify(followees);
-                });
-                $('#collapse-followee li a').unbind(followee_click).click(followee_click);
-            },
-            error : errorHandler
+        $('#doc-dropdown-js').dropdown({justify: '#doc-dropdown-justify-js'});
+        var $dropdown = $('#doc-dropdown-js');
+        var data = $dropdown.data('amui.dropdown');
+        $dropdown.on('open.dropdown.amui', function (e) {
+            console.log('open event triggered');
         });
+
+        $('#searchInput').keydown(function() {
+            $dropdown.dropdown('close');
+        });
+        $('#searchInput').focus(function () {
+            $dropdown.dropdown('close');
+        });
+        $('#searchButton').unbind('click').bind('click', function () {
+            var search = $('#searchInput').val();
+            if(!search) {
+                return;
+            }
+            $.ajax({
+                url: 'api/v1/user/find?name=' + search,
+                type: 'get',
+                dataType: 'json',
+                beforeSend: function (xhr, settings) {
+                    xhr.setRequestHeader('Authorization', 'Bearer ' + api_token);
+                },
+                success: function (data) {
+                    $('#searchDropdownList').html('');
+
+                    if(data.length > 0) {
+                        $.each(data, function(index, value) {
+                            $('#searchDropdownList').append('<li><a href="#'+ value.id
+                                    + '">' + value.nick_name + '</a></li>');
+                        });
+
+                        $('#searchDropdownList li').unbind('click').bind('click', function() {
+                            var id = $(this).children('a').attr('href').substr(1);
+                            var nick_name = $(this).children('a').text();
+                            console.log(id, nick_name);
+
+                            if (confirm('要关注用户' + nick_name + '吗?'))
+                            {
+                                $.ajax({
+                                    url: 'api/v1/user/follow/' + id,
+                                    type: 'post',
+                                    dataType: 'json',
+                                    beforeSend: function (xhr, settings) {
+                                        xhr.setRequestHeader('Authorization', 'Bearer ' + api_token);
+                                    },
+                                    success: function (data) {
+                                        console.log("关注用户" + nick_name);
+                                    },
+                                    error: errorHandler
+                                });
+                                getFollowees();
+                            }
+                            $dropdown.dropdown('close');
+                        });
+
+                        if(!data.active) {
+                            $dropdown.dropdown('open');
+                        }
+                    }
+                },
+                error: errorHandler
+            });
+        });
+
+        getFollowees();
 
         $('#quitButton').click(function() {
             localStorage.clear();
@@ -171,6 +218,46 @@
         {
             var error = JSON.parse(data.responseText);
             alert(error.msg);
+        }
+
+        function getFollowees()
+        {
+            $.ajax({
+                url:'api/v1/user/follow',
+                type:'get',
+                dataType:'json',
+                beforeSend: function(xhr, settings) { xhr.setRequestHeader('Authorization','Bearer ' + api_token); },
+                success: function(data) {
+                    $('#collapse-followee').html('');
+                    $.each(data, function(index, value) {
+                        var nickName = value.nick_name;
+                        $('#collapse-followee').append('<li><a href="#' + value.id + '"> ' + nickName +
+                                '<span class="am-badge am-badge-warning am-round am-margin-right am-fr"></span></a></li>');
+
+                        // 将数据存入 local storage
+                        var followees = localStorage.followees;
+                        if(followees === undefined) {
+                            followees = [];
+                        } else {
+                            followees = JSON.parse(followees);
+                        }
+
+                        var exist = false;
+                        $.each(followees, function(i, v) {
+                            if(v.id == value.id) {
+                                exist = true;
+                                return false;
+                            }
+                        });
+                        if(exist == false) {
+                            followees.push(value);
+                        }
+                        localStorage.followees = JSON.stringify(followees);
+                    });
+                    $('#collapse-followee li a').unbind(followee_click).click(followee_click);
+                },
+                error : errorHandler
+            });
         }
 
         function followee_click()

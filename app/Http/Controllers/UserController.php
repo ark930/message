@@ -224,4 +224,29 @@ class UserController extends BaseController
 
         return $users;
     }
+
+    /**
+     * 查找用户
+     *
+     * @param Request $request
+     * @return mixed
+     */
+    public function findUsers(Request $request)
+    {
+        $name = $request->input('name');
+
+        $users = User::where('tel', 'like', "%$name%")
+            ->orWhere('nick_name', 'like', "%$name%")
+            ->get();
+
+        $out = [];
+        foreach ($users as $user) {
+            $out[] = [
+                'id' => $user['id'],
+                'nick_name' => $user['nick_name'] ?: $user['tel'],
+            ];
+        }
+
+        return $out;
+    }
 }

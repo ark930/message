@@ -35,6 +35,8 @@ Route::group(['prefix' => 'api/v1'], function() {
         Route::post('user/group/{group_id}/dismiss', 'GroupController@dismiss');
         Route::post('user/group/{group_id}/invite', 'GroupController@invite');
 
+        Route::get('user/find', 'UserController@findUsers');
+        
         Route::post('message', 'MessageController@sendMessage');
         Route::get('message', 'MessageController@getMessage');
     });
