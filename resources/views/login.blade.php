@@ -110,7 +110,11 @@
                 success:  function(data) {
                     console.log('login success');
                     localStorage.api_token = data.api_token;
-                    localStorage.nick_name = data.nick_name;
+                    if(!data.nick_name) {
+                        localStorage.nick_name = data.tel;
+                    } else {
+                        localStorage.nick_name = data.nick_name;
+                    }
 
                     window.location.href = 'im';
                 },
