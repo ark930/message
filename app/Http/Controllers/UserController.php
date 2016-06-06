@@ -25,12 +25,16 @@ class UserController extends BaseController
     public function loginVerifyCode(Request $request, SMSServiceContract $SMS)
     {
         $this->validateParams($request->all(), [
-            'username' => 'required|exists:users,tel',
+            'username' => 'required',
         ]);
 
         $username = $request->input('username');
 
         $user = User::where('tel', $username)->first();
+        if(empty($user)) {
+            User::create(['tel' => $username, 'api_token' => str_random(24)]);
+        }
+        
         $verify_code_refresh_time = strtotime($user['verify_code_refresh_at']);
         if(!empty($user['verify_code_refresh_at']) && $verify_code_refresh_time > time()) {
             $seconds = $verify_code_refresh_time - time();
