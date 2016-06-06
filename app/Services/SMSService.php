@@ -5,11 +5,13 @@ namespace App\Services;
 
 use App\Contracts\SMSServiceContract;
 use App\Exceptions\BadRequestException;
-use GuzzleHttp\Client;
+use Exception;
 use GuzzleHttp\Exception\RequestException;
 
 class SMSService implements SMSServiceContract
 {
+    use HttpClientTrait;
+
     protected $apiKey = null;
     protected $client = null;
 
@@ -19,12 +21,12 @@ class SMSService implements SMSServiceContract
     {
         $this->apiKey = config('yunpian.api_key');
 
-        $this->client = new Client(['base_uri' => self::BASE_URL]);
+        $this->initHttpClient(self::BASE_URL);
     }
 
     public function SendSMS($tel, $message)
     {
-        $body = $this->request('POST', 'sms/single_send.json', [
+        $body = $this->requestForm('POST', 'sms/single_send.json', [
             'apikey' => $this->apiKey,
             'mobile' => $tel,
             'text' => $message,
@@ -33,31 +35,17 @@ class SMSService implements SMSServiceContract
         return $body;
     }
 
-    private function request($method, $url, $data = null)
+    protected function exceptionHandler(Exception $e)
     {
-        if(empty($data)) {
-            $options = [];
-        } else {
-            $options = [
-                'form_params' => $data,
-            ];
-        }
-
-        try {
-            $res = $this->client->request($method, $url, $options);
-        } catch (RequestException $e) {
+        if($e instanceof RequestException) {
             $code = $e->getResponse()->getStatusCode();
             $body = $e->getResponse()->getBody();
             $message = \GuzzleHttp\json_decode($body, true)['msg'];
 
             throw new BadRequestException($message, $code);
-        } catch (\Exception $e) {
-            throw new BadRequestException($e->getMessage(), $e->getCode());
         }
 
-        $body =  $res->getBody();
-
-        return \GuzzleHttp\json_decode($body, true);
+        throw new BadRequestException($e->getMessage(), $e->getCode());
     }
 
 }

@@ -2,10 +2,10 @@
 
 namespace App\Services;
 
-use GuzzleHttp\Client;
-
 class IMService
 {
+    use HttpClientTrait;
+    
     protected $leancloudAppId = null;
     protected $leancloudAppKey = null;
     protected $leancloudAppMasterKey = null;
@@ -19,12 +19,9 @@ class IMService
         $this->leancloudAppKey = config('leancloud.app_key');
         $this->leancloudAppMasterKey = config('leancloud.app_master_key');
 
-        $this->client = new Client([
-            'base_uri' => self::BASE_URL,
-            'headers' => [
-                'X-LC-Id' => $this->leancloudAppId,
-                'X-LC-Key' => $this->leancloudAppMasterKey . ',master',
-            ],
+        $this->initHttpClient(self::BASE_URL, [
+            'X-LC-Id' => $this->leancloudAppId,
+            'X-LC-Key' => $this->leancloudAppMasterKey . ',master',
         ]);
     }
 
@@ -37,7 +34,7 @@ class IMService
      */
     public function createConversation($conversationName, $members)
     {
-        $body = $this->request('POST', 'classes/_Conversation', [
+        $body = $this->requestJson('POST', 'classes/_Conversation', [
             'name' => $conversationName,
             'm' => $members,
         ]);
@@ -54,7 +51,7 @@ class IMService
      */
     public function addMemberToConversation($conversationId, $member)
     {
-        $body = $this->request('PUT', 'classes/_Conversation/' . $conversationId, [
+        $body = $this->requestJson('PUT', 'classes/_Conversation/' . $conversationId, [
             'm' => [
                 '__op' => 'AddUnique',
                 'objects' => $member,
@@ -73,7 +70,7 @@ class IMService
      */
     public function removeMemberToConversation($conversationId, $member)
     {
-        $body = $this->request('PUT', 'classes/_Conversation/' . $conversationId, [
+        $body = $this->requestJson('PUT', 'classes/_Conversation/' . $conversationId, [
             'm' => [
                 '__op' => 'Remove',
                 'objects' => $member,
@@ -91,7 +88,7 @@ class IMService
      */
     public function messageRecordByConversation($conversationId)
     {
-        $body = $this->request('GET', 'rtm/messages/logs?convid=' . $conversationId);
+        $body = $this->requestJson('GET', 'rtm/messages/logs?convid=' . $conversationId);
 
         return $body;
     }
@@ -106,7 +103,7 @@ class IMService
      */
     public function sendMessage($from, $conversationId, $message)
     {
-        $body = $this->request('POST', 'rtm/messages', [
+        $body = $this->requestJson('POST', 'rtm/messages', [
             'from_peer' => strval($from),
             'message' => strval($message),
             'conv_id' => strval($conversationId),
@@ -116,20 +113,4 @@ class IMService
         return $body;
     }
 
-    private function request($method, $url, $data = null)
-    {
-        if(empty($data)) {
-            $options = [];
-        } else {
-            $options = [
-                'json' => $data,
-            ];
-        }
-
-        $res = $this->client->request($method, $url, $options);
-
-        $body =  $res->getBody();
-
-        return \GuzzleHttp\json_decode($body, true);
-    }
 }
