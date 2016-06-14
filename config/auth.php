@@ -45,6 +45,11 @@ return [
             'driver' => 'token',
             'provider' => 'users',
         ],
+
+        'message_api' => [
+            'driver' => 'device_token',
+            'provider' => 'users',
+        ],
     ],
 
     /*

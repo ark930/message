@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Contracts\SMSServiceContract;
 use App\Exceptions\BadRequestException;
+use App\Models\Device;
 use App\Models\Follower;
 use App\Models\Group;
 use App\Models\User;
@@ -32,7 +33,7 @@ class UserController extends BaseController
 
         $user = User::where('tel', $username)->first();
         if(empty($user)) {
-            User::create(['tel' => $username, 'api_token' => str_random(24)]);
+            User::create(['tel' => $username, 'api_token' => str_random(24), 'active' => true]);
         }
         
         $verify_code_refresh_time = strtotime($user['verify_code_refresh_at']);
@@ -68,6 +69,8 @@ class UserController extends BaseController
         $this->validateParams($request->all(), [
             'username' => 'required|exists:users,tel',
             'verify_code' => 'required',
+//            'ip' => 'required',
+//            'client' => 'required',
         ]);
 
         $username = $request->input('username');
@@ -84,9 +87,28 @@ class UserController extends BaseController
             throw new BadRequestException('验证码失效, 请重新获取', 400);
         }
 
+        $device = $user->devices()
+            ->where('ip', '192.168.3.111')
+            ->first();
+
+        $api_token = str_random(32);
+        if(empty($device)) {
+            $device = new Device([
+                'ip' => '192.168.3.111',
+                'client' => 'chrome',
+                'active' => true,
+                'api_token' => $api_token,
+            ]);
+        } else {
+            $device['api_token'] = $api_token;
+        }
+        $device = $user->devices()->save($device);
+        
         // 登录成功后, 验证码立即失效
-        User::where('tel', $username)
-            ->update(['verify_code_expire_at' => null]);
+//        User::where('tel', $username)
+//            ->update(['verify_code_expire_at' => null]);
+
+        $user['api_token'] = $api_token;
 
         return $user;
     }
@@ -104,7 +126,7 @@ class UserController extends BaseController
         ]);
 
         $username = $request->input('username');
-        User::create(['tel' => $username, 'api_token' => str_random(24)]);
+        User::create(['tel' => $username, 'api_token' => str_random(24), 'active' => true]);
 
         return response()->json(['msg' => 'success']);
     }

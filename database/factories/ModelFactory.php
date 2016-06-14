@@ -17,7 +17,6 @@ $factory->define(App\Models\User::class, function (Faker\Generator $faker) {
         'nick_name' => $faker->firstName,
         'email' => $faker->safeEmail,
         'tel' => mt_rand(13000000000,13999999999),
-        'api_token' => str_random('24'),
-//        'api_token' => 'T6AW7rhs9IEyZ5LuWgqhONvg',
+        'type' => 'person',
     ];
 });

@@ -32,4 +32,8 @@ class User extends Authenticatable
         return $this->belongsToMany('App\Models\Group', 'user_groups');
     }
 
+    public function devices()
+    {
+        return $this->hasMany('App\Models\Device');
+    }
 }

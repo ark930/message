@@ -20,8 +20,7 @@ Route::group(['prefix' => 'api/v1'], function() {
 
     Route::group([
         'middleware' => [
-            'auth:api',
-//            'throttle:5',
+            'auth:' . config('message.guard'),
         ]
     ], function () {
         Route::get('user/follow', 'UserController@getFollow');

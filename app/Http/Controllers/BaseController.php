@@ -24,11 +24,11 @@ class BaseController extends Controller
 
     protected function user()
     {
-        return Auth::guard('api')->user();
+        return Auth::guard(config('message.guard'))->user();
     }
 
     protected function user_id()
     {
-        return Auth::guard('api')->id();
+        return Auth::guard(config('message.guard'))->id();
     }
 }

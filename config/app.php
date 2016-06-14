@@ -158,6 +158,7 @@ return [
         
         App\Providers\IMServiceProvider::class,
         App\Providers\SMSServiceProvider::class,
+        App\Providers\DeviceAuthServiceProvider::class,
 
     ],
 
