@@ -138,6 +138,22 @@ class UserController extends BaseController
             throw new BadRequestException('已关注', 400);
         }
 
+        $follower = Follower::where('follower_id', $user_id)
+            ->where('followee_id', $f_user_id)
+            ->withTrashed()
+            ->get();
+
+        if(!$follower->isEmpty()) {
+            Follower::where('follower_id', $user_id)
+                ->where('followee_id', $f_user_id)
+                ->withTrashed()
+                ->restore();
+
+            return Follower::where('follower_id', $user_id)
+                ->where('followee_id', $f_user_id)
+                ->get();
+        }
+
         $follower = Follower::where('follower_id', $f_user_id)
             ->where('followee_id', $user_id)
             ->get();
