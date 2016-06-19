@@ -156,11 +156,13 @@ class UserController extends BaseController
 
         $follower = Follower::where('follower_id', $f_user_id)
             ->where('followee_id', $user_id)
-            ->get();
-        if(!$follower->isEmpty()) {
+            ->first();
+
+        if(!empty($follower)) {
             // 被关注者已关注专注者时, 获取 group_id
-            $group = $follower->group;
-            $group_id = $group['id'];
+            $group_id = $follower['group_id'];
+//            $group = $follower->group;
+//            $group_id = $group['id'];
         } else {
             // 双方互不关注时, 创建对话
             $group_name = "私聊: $user_id, $f_user_id";
@@ -183,6 +185,8 @@ class UserController extends BaseController
         $follower->followee_id = intval($f_user_id);
         $follower->group_id = $group_id;
         $follower->save();
+
+        unset($follower['id']);
 
         return $follower;
     }
