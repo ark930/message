@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Storage;
 use App\Contracts\SMSServiceContract;
 use App\Exceptions\BadRequestException;
 use App\Models\Device;
@@ -268,6 +269,70 @@ class UserController extends BaseController
     }
 
     /**
+     * 获取本用户个人信息
+     * 
+     * @param Request $request
+     * @return mixed
+     */
+    public function getUserProfile(Request $request)
+    {
+        $user_id = $this->user_id();
+
+        $user = User::find($user_id);
+
+        return $user;
+    }
+
+    /**
+     * 编辑本用户个人信息
+     * @param Request $request
+     */
+    public function editUserProfile(Request $request)
+    {
+
+    }
+
+    /**
+     * 编辑本用户头像
+     * 
+     * @param Request $request
+     * @return mixed
+     * @throws BadRequestException
+     */
+    public function editUserAvatar(Request $request)
+    {
+        $user = $this->user();
+
+        if(!$request->hasFile('avatar')) {
+            throw new BadRequestException('上传文件为空', 400);
+        }
+
+        $file = $request->file('avatar');
+        if(!$file->isValid()) {
+            throw new BadRequestException('文件上传出错', 400);
+        }
+
+        $newFileName = md5(time().rand(0,10000)).'.'.$file->getClientOriginalExtension();
+        $savePath = 'avatar/'.$newFileName;
+
+        $bytes = Storage::put(
+            $savePath,
+            file_get_contents($file->getRealPath())
+        );
+
+        if(!Storage::exists($savePath)) {
+            throw new BadRequestException('保存文件失败', 400);
+        }
+
+        $user->update([
+            'avatar_url' => $savePath
+        ]);
+
+        header("Content-Type: ".Storage::mimeType($savePath));
+        return Storage::get($savePath);
+    }
+
+    /**
      * 查找用户
      *
      * @param Request $request
@@ -290,5 +355,70 @@ class UserController extends BaseController
         }
 
         return $out;
+    }
+
+    /**
+     * 激活设备列表
+     * 
+     * @param Request $request
+     * @return mixed
+     */
+    public function activeDeviceList(Request $request)
+    {
+        $user = $this->user();
+        $devices = $user->devices->where('active', 1);
+
+        $currentApiToken = $request->header('Authorization');
+
+        $currentDevice = null;
+        $otherDevices = [];
+        foreach ($devices as &$device)
+        {
+            $apiToken = $device['api_token'];
+
+            unset($device['api_token']);
+            unset($device['active']);
+
+            if($apiToken == $currentApiToken) {
+                $currentDevice = $device;
+            } else {
+                $otherDevices = $device;
+            }
+        }
+
+        return [
+            'current_device' => $currentDevice,
+            'other_devices' => $otherDevices,
+        ];
+    }
+
+    /**
+     * 注销设备
+     *
+     * @param Request $request
+     * @param $device_id
+     * @return \Illuminate\Contracts\Routing\ResponseFactory|\Symfony\Component\HttpFoundation\Response
+     * @throws BadRequestException
+     */
+    public function logoutDevice(Request $request, $device_id)
+    {
+        $device = Device::find($device_id);
+
+        if(empty($device)) {
+            throw new BadRequestException('该设备不存在', 400);
+        }
+
+        $api_token = $request->header('Authorization');
+
+        if($device['api_token'] == $api_token) {
+            throw new BadRequestException('无法注销当前设备', 400);
+        }
+
+        Device::where('id', $device_id)
+            ->update([
+                'active' => 0
+            ]);
+
+        return response('', 204);
     }
 }
