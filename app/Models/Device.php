@@ -10,7 +10,7 @@ class Device extends Model
     use SoftDeletes;
     
     protected $fillable = [
-        'ip', 'client', 'active', 'api_token',
+        'user_id', 'ip', 'client', 'active', 'api_token',
     ];
 
     public function user()

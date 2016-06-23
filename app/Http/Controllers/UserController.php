@@ -98,6 +98,7 @@ class UserController extends BaseController
         $api_token = str_random($api_token_length);
         if(empty($device)) {
             $device = new Device([
+                'user_id' => $user['id'],
                 'ip' => $ip,
                 'client' => $client,
                 'api_token' => $api_token,
