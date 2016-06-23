@@ -391,7 +391,7 @@ class ContactController extends BaseController
         foreach ($contacts as $contact) {
             $relation = $contact['relation'];
             $user = $contact->contact;
-            $display_name = $this->getContactDisplayName($contact, $user);
+            $display_name = $contact->getDisplayName();
             $tel = null;
 
             if($contact['contact_tel_visible']) {
@@ -429,7 +429,7 @@ class ContactController extends BaseController
             ->first();
 
         $user = $contact->contact;
-        $display_name = $this->getContactDisplayName($contact, $user);
+        $display_name = $contact->getDisplayName();
         $tel = null;
 
         if($contact['contact_tel_visible']) {
@@ -494,22 +494,5 @@ class ContactController extends BaseController
         $contact->save();
 
         return $contact;
-    }
-
-    private function getContactDisplayName($contact, $user)
-    {
-        $display_name = null;
-
-        if(!empty($contact['contact_display_name'])) {
-            $display_name = $contact['contact_display_name'];
-        } else {
-            if(!empty($user['display_name'])) {
-                $display_name = $user['display_name'];
-            } else if(!empty($user['user_name'])) {
-                $display_name = $user['user_name'];
-            }
-        }
-
-        return $display_name;
     }
 }

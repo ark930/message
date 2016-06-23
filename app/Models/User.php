@@ -36,4 +36,15 @@ class User extends Authenticatable
     {
         return $this->hasMany('App\Models\Device');
     }
+    
+    public function getDisplayName()
+    {
+        if(!empty($this->display_name)) {
+            return $this->display_name;
+        } else if(!empty($this->user_name)) {
+            return $this->user_name;
+        }
+        
+        return null;
+    }
 }

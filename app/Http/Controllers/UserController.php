@@ -420,7 +420,7 @@ class UserController extends BaseController
         $name = $request->input('name');
 
         $users = User::where('tel', 'like', "%$name%")
-            ->orWhere('nick_name', 'like', "%$name%")
+            ->orWhere('display_name', 'like', "%$name%")
             ->where('searchable', true)
             ->get();
 
@@ -431,6 +431,7 @@ class UserController extends BaseController
                 'username' => $user['user_name'],
                 'display_name' => $user['display_name'] ?: $user['tel'],
                 'avatar_url' => $user['avatar_url'],
+                'type' => $user['type'],
             ];
         }
 

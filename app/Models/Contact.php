@@ -19,6 +19,15 @@ class Contact extends Model
         return $this->belongsTo('App\Models\User', 'contact_user_id');
     }
 
+    public function getDisplayName()
+    {
+        if(!empty($this->contact_display_name)) {
+            return $this->contact_display_name;
+        }
+
+        return $this->contact->getDisplayName();
+    }
+
     /**
      * A work around fix to Illegal offset type
      * @param \Illuminate\Database\Eloquent\Builder $query
