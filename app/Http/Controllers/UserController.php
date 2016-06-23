@@ -27,10 +27,10 @@ class UserController extends BaseController
     public function loginVerifyCode(Request $request, SMSServiceContract $SMS)
     {
         $this->validateParams($request->all(), [
-            'username' => 'required',
+            'tel' => 'required',
         ]);
 
-        $username = $request->input('username');
+        $username = $request->input('tel');
 
         $user = User::where('tel', $username)->first();
         if(empty($user)) {
@@ -66,13 +66,13 @@ class UserController extends BaseController
     public function login(Request $request)
     {
         $this->validateParams($request->all(), [
-            'username' => 'required|exists:users,tel',
+            'tel' => 'required|exists:users,tel',
             'verify_code' => 'required',
             'ip' => 'required',
             'client' => 'required',
         ]);
 
-        $username = $request->input('username');
+        $username = $request->input('tel');
         $verify_code = $request->input('verify_code');
         $user = User::where('tel', $username)
             ->where('verify_code', $verify_code)
