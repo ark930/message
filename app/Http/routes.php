@@ -67,4 +67,6 @@ Route::group([], function() {
 
     Route::get('login', 'Page\UserController@login');
     Route::get('im', 'Page\IMController@main');
+
+    Route::get('dhc', 'TestController@dhc');
 });
