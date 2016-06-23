@@ -40,9 +40,8 @@ class ContactController extends BaseController
                 // 已关注被关注者时
                 throw new BadRequestException('已关注', 400);
             }
-            $contact->update([
-                'relation' => 'follow'
-            ]);
+            $contact['relation'] = 'follow';
+            $contact->save();
         } else {
             //        $contact = Contact::where('user_id', $user_id)
 //            ->where('contact_user_id', $f_user_id)
@@ -143,12 +142,11 @@ class ContactController extends BaseController
 
         $contact = Contact::where('user_id', $user_id)
             ->where('contact_user_id', $f_user_id)
-            ->get();
-        if(!$contact->isEmpty()) {
+            ->first();
+        if(!empty($contact)) {
             if($contact['relation'] != 'follow' || $contact['relation'] != 'star') {
-                $contact->update([
-                    'relation' => 'follow'
-                ]);
+                $contact['relation'] = 'follow';
+                $contact->save();
             }
         } else {
             $contact = Contact::where('user_id', $f_user_id)
@@ -189,12 +187,11 @@ class ContactController extends BaseController
 
         $contact = Contact::where('user_id', $user_id)
             ->where('contact_user_id', $f_user_id)
-            ->get();
-        if(!$contact->isEmpty()) {
+            ->first();
+        if(!empty($contact)) {
             if ($contact['relation'] == 'follow' || $contact['relation'] == 'star') {
-                $contact->update([
-                    'relation' => 'stranger'
-                ]);
+                $contact['relation'] = 'stranger';
+                $contact->save();
             }
             return response('', 204);
         }
@@ -203,7 +200,7 @@ class ContactController extends BaseController
     }
     
     /**
-     * 对联系人标星
+     * 加星
      *
      * @param Request $request
      * @param $f_user_id
@@ -218,15 +215,14 @@ class ContactController extends BaseController
 
         $contact = Contact::where('user_id', $user_id)
             ->where('contact_user_id', $f_user_id)
-            ->where('relation', 'follow')
-            ->get();
-        if($contact->isEmpty()) {
+            ->first();
+
+        if(empty($contact)) {
             throw new BadRequestException('未关注该用户, 无法标星', 400);
         } else {
             if ($contact['relation'] == 'follow') {
-                $contact->update([
-                    'relation' => 'star'
-                ]);
+                $contact['relation'] = 'star';
+                $contact->save();
             } else if ($contact['relation'] == 'star') {
                 throw new BadRequestException('该用户已标星', 400);
             } else {
@@ -238,7 +234,7 @@ class ContactController extends BaseController
     }
 
     /**
-     * 对联系人取消标星
+     * 取消加星
      *
      * @param Request $request
      * @param $f_user_id
@@ -254,20 +250,19 @@ class ContactController extends BaseController
         $contact = Contact::where('user_id', $user_id)
             ->where('contact_user_id', $f_user_id)
             ->where('relation', 'star')
-            ->get();
-        if($contact->isEmpty()) {
+            ->first();
+        if(empty($contact)) {
             throw new BadRequestException('未对注该用户标星, 无法操作', 400);
         } else {
-            $contact->update([
-                'relation' => 'follow'
-            ]);
+            $contact['relation'] = 'follow';
+            $contact->save();
         }
 
         return response('', 204);
     }
 
     /**
-     * 屏蔽联系人
+     * 屏蔽
      *
      * @param Request $request
      * @param $f_user_id
@@ -282,14 +277,13 @@ class ContactController extends BaseController
 
         $contact = Contact::where('user_id', $user_id)
             ->where('contact_user_id', $f_user_id)
-            ->get();
-        if(!$contact->isEmpty()) {
+            ->first();
+        if(!empty($contact)) {
             if($contact['relation'] == 'block') {
                 // 该用户已被屏蔽时, 不做任何操作
             } else {
-                $contact->update([
-                    'relation' => 'block'
-                ]);
+                $contact['relation'] = 'block';
+                $contact->save();
             }
 
             return response('', 204);
@@ -317,7 +311,7 @@ class ContactController extends BaseController
     }
 
     /**
-     * 取消屏蔽用户
+     * 取消屏蔽
      *
      * @param Request $request
      * @param $f_user_id
@@ -333,13 +327,12 @@ class ContactController extends BaseController
         $contact = Contact::where('user_id', $user_id)
             ->where('contact_user_id', $f_user_id)
             ->where('relation', 'block')
-            ->get();
-        if($contact->isEmpty()) {
+            ->first();
+        if(empty($contact)) {
             throw new BadRequestException('未屏蔽该用户, 无法继续操作', 400);
         } else {
-            $contact->update([
-                'relation' => 'stranger'
-            ]);
+            $contact['relation'] = 'stranger';
+            $contact->save();
         }
 
         return response('', 204);
@@ -366,13 +359,12 @@ class ContactController extends BaseController
 
         $contact = Contact::where('user_id', $user_id)
             ->where('contact_user_id', $f_user_id)
-            ->get();
-        if($contact->isEmpty()) {
+            ->first();
+        if(empty($contact)) {
             throw new BadRequestException('无法进行该操作', 400);
         } else {
-            $contact->update([
-                'display_name' => $display_name
-            ]);
+            $contact['display_name'] = $display_name;
+            $contact->save();
         }
 
         return response('', 204);
@@ -390,23 +382,36 @@ class ContactController extends BaseController
 
         $contacts = Contact::where('user_id', $user_id)->get();
 
-        $users = [];
+        $res = [
+            'star' => [],
+            'follow' => [],
+            'stranger' => [],
+            'block' => []
+        ];
         foreach ($contacts as $contact) {
-            $user = $contact->owner;
-            $conv_id = $contact->conv_id;
+            $relation = $contact['relation'];
+            $user = $contact->contact;
+            $display_name = $this->getContactDisplayName($contact, $user);
+            $tel = null;
 
-            $users[] = [
-                'id' => $user['id'],
-                'display_name' => $user['display_name'],
-                'conv_id' => $conv_id,
+            if($contact['contact_tel_visible']) {
+                $tel = $user['tel'];
+            }
+
+            $res[$relation][] = [
+                'use_id' => $contact['contact_user_id'],
+                'display_name' => $display_name,
+                'tel' => $tel,
+                'avatar_path' => $user['avatar_url'],
+                'conv_id' => $contact['conv_id'],
             ];
         }
 
-        return $users;
+        return $res;
     }
 
     /**
-     * 获取联系人消息
+     * 获取联系人
      *
      * @param Request $request
      * @param $f_user_id
@@ -421,9 +426,51 @@ class ContactController extends BaseController
 
         $contact = Contact::where('user_id', $user_id)
             ->where('contact_user_id', $f_user_id)
-            ->get();
+            ->first();
 
-        return response($contact);
+        $user = $contact->contact;
+        $display_name = $this->getContactDisplayName($contact, $user);
+        $tel = null;
+
+        if($contact['contact_tel_visible']) {
+            $tel = $user['tel'];
+        }
+
+        return [
+            'use_id' => $contact['contact_user_id'],
+            'display_name' => $display_name,
+            'tel' => $tel,
+            'avatar_path' => $user['avatar_url'],
+            'conv_id' => $contact['conv_id'],
+        ];
+    }
+
+    /**
+     * 编辑联系人信息
+     *
+     * @param Request $request
+     * @param $f_user_id
+     * @return \Illuminate\Contracts\Routing\ResponseFactory|\Symfony\Component\HttpFoundation\Response
+     * @throws BadRequestException
+     */
+    public function editContact(Request $request, $f_user_id)
+    {
+        $user_id = $this->user_id();
+
+        $this->basicValidate($user_id, $f_user_id);
+
+        $contact = Contact::where('user_id', $user_id)
+            ->where('contact_user_id', $f_user_id)
+            ->first();
+
+        $display_name = $request->input('display_name');
+
+        if(!empty($display_name)) {
+            $contact['contact_display_name'] = $display_name;
+        }
+        $contact->save();
+
+        return response('', 204);
     }
 
     private function basicValidate($user_id, $f_user_id)
@@ -447,5 +494,22 @@ class ContactController extends BaseController
         $contact->save();
 
         return $contact;
+    }
+
+    private function getContactDisplayName($contact, $user)
+    {
+        $display_name = null;
+
+        if(!empty($contact['contact_display_name'])) {
+            $display_name = $contact['contact_display_name'];
+        } else {
+            if(!empty($user['display_name'])) {
+                $display_name = $user['display_name'];
+            } else if(!empty($user['user_name'])) {
+                $display_name = $user['user_name'];
+            }
+        }
+
+        return $display_name;
     }
 }

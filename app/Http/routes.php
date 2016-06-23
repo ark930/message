@@ -31,13 +31,13 @@ Route::group(['prefix' => 'api/v1'], function() {
 
         Route::get('contact', 'ContactController@getContacts');
         Route::get('contact/{f_user_id}', 'ContactController@getContact');
+        Route::post('contact/{f_user_id}', 'ContactController@editContact');
         Route::post('contact/{f_user_id}/block', 'ContactController@block');
         Route::post('contact/{f_user_id}/unblock', 'ContactController@unblock');
         Route::post('contact/{f_user_id}/follow', 'ContactController@follow');
         Route::post('contact/{f_user_id}/unfollow', 'ContactController@unfollow');
         Route::post('contact/{f_user_id}/star', 'ContactController@star');
         Route::post('contact/{f_user_id}/unstar', 'ContactController@unstar');
-        Route::post('contact/{f_user_id}/display_name', 'ContactController@editContactDisplayName');
 
         Route::get('user/group', 'GroupController@show');
         Route::post('user/group/create', 'GroupController@createGroup');
@@ -49,6 +49,9 @@ Route::group(['prefix' => 'api/v1'], function() {
         Route::get('user/find', 'UserController@findUsers');
         Route::post('user/profile/avatar', 'UserController@editUserAvatar');
         Route::get('user/profile/avatar', 'UserController@getUserAvatar');
+        Route::get('user/profile/avatar/{avatar_name}', 'UserController@getAvatarByName');
+//        Route::get('user/preference', 'UserController@editPreference');
+        Route::post('user/preference', 'UserController@editPreference');
 
         Route::get('user/device', 'UserController@activeDeviceList');
         Route::post('user/device/{device_id}/logout', 'UserController@logoutDevice');

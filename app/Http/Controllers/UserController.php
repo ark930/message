@@ -34,7 +34,7 @@ class UserController extends BaseController
 
         $user = User::where('tel', $username)->first();
         if(empty($user)) {
-            User::create(['tel' => $username, 'api_token' => str_random(24), 'active' => true]);
+            User::create(['tel' => $username, 'api_token' => str_random(24)]);
         }
         
         $verify_code_refresh_time = strtotime($user['verify_code_refresh_at']);
@@ -101,7 +101,6 @@ class UserController extends BaseController
             $device = new Device([
                 'ip' => $ip,
                 'client' => $client,
-                'active' => true,
                 'api_token' => $api_token,
             ]);
         } else {
@@ -131,7 +130,7 @@ class UserController extends BaseController
         ]);
 
         $username = $request->input('username');
-        User::create(['tel' => $username, 'api_token' => str_random(24), 'active' => true]);
+        User::create(['tel' => $username, 'api_token' => str_random(24)]);
 
         return response()->json(['msg' => 'success']);
     }
@@ -307,6 +306,8 @@ class UserController extends BaseController
     {
         $user = $this->user();
 
+        $old_avatar_url = $user['avatar_url'];
+
         if(!$request->hasFile('avatar')) {
             throw new BadRequestException('上传文件为空', 400);
         }
@@ -316,7 +317,7 @@ class UserController extends BaseController
             throw new BadRequestException('文件上传出错', 400);
         }
 
-        $newFileName = md5(time().rand(0,10000)).'.'.$file->getClientOriginalExtension();
+        $newFileName = sha1(time().rand(0,10000)).'.'.$file->getClientOriginalExtension();
         $savePath = 'avatar/'.$newFileName;
 
         $bytes = Storage::put(
@@ -331,6 +332,9 @@ class UserController extends BaseController
         $user['avatar_url'] = $savePath;
         $user->save();
 
+        // 删除老文件
+        Storage::delete($old_avatar_url);
+
         return response(Storage::get($savePath))
             ->header('Content-Type', Storage::mimeType($savePath));
     }
@@ -340,12 +344,36 @@ class UserController extends BaseController
      *
      * @param Request $request
      * @return mixed
+     * @throws BadRequestException
      */
     public function getUserAvatar(Request $request)
     {
         $user = $this->user();
 
         $avatar_url = $user['avatar_url'];
+
+        if(empty($avatar_url) || !Storage::exists($avatar_url)) {
+            throw new BadRequestException('用户头像不存在', 400);
+        }
+
+        return response(Storage::get($avatar_url))
+            ->header('Content-Type', Storage::mimeType($avatar_url));
+    }
+
+    /**
+     * 通过文件名获取头像
+     *
+     * @param Request $request
+     * @param $avatar_name
+     * @return mixed
+     * @throws BadRequestException
+     */
+    public function getAvatarByName(Request $request, $avatar_name)
+    {
+        $avatar_url = 'avatar/' . $avatar_name;
+        if(empty($avatar_url) || !Storage::exists($avatar_url)) {
+            throw new BadRequestException('用户头像不存在', 400);
+        }
 
         return response(Storage::get($avatar_url))
             ->header('Content-Type', Storage::mimeType($avatar_url));
@@ -363,17 +391,20 @@ class UserController extends BaseController
 
         $users = User::where('tel', 'like', "%$name%")
             ->orWhere('nick_name', 'like', "%$name%")
+            ->where('searchable', true)
             ->get();
 
-        $out = [];
+        $res = [];
         foreach ($users as $user) {
-            $out[] = [
+            $res[] = [
                 'id' => $user['id'],
-                'nick_name' => $user['nick_name'] ?: $user['tel'],
+                'username' => $user['user_name'],
+                'display_name' => $user['display_name'] ?: $user['tel'],
+                'avatar_url' => $user['avatar_url'],
             ];
         }
 
-        return $out;
+        return $res;
     }
 
     /**
@@ -385,7 +416,7 @@ class UserController extends BaseController
     public function activeDeviceList(Request $request)
     {
         $user = $this->user();
-        $devices = $user->devices->where('active', 1);
+        $devices = $user->devices;
 
         $currentApiToken = $request->header('Authorization');
         $currentApiToken = explode(' ', $currentApiToken)[1];
@@ -435,6 +466,29 @@ class UserController extends BaseController
         }
 
         $device->delete();
+
+        return response('', 204);
+    }
+
+    /**
+     * 偏好设置
+     * 
+     * @param Request $request
+     * @return \Illuminate\Contracts\Routing\ResponseFactory|\Symfony\Component\HttpFoundation\Response
+     * @throws BadRequestException
+     */
+    public function editPreference(Request $request)
+    {
+        $user = $this->user();
+
+        $searchable = $request->input('searchable');
+
+        $this->validateParams(compact('searchable'), [
+            'searchable' => 'boolean',
+        ]);
+
+        $user['searchable'] = $searchable;
+        $user->save();
 
         return response('', 204);
     }
