@@ -23,11 +23,9 @@ Route::group(['prefix' => 'api/v1'], function() {
             'auth:' . config('message.guard'),
         ]
     ], function () {
-        Route::get('user/info', 'ContactController@getUserProfile');
-
-        Route::get('user/follow', 'ContactController@getContacts');
-        Route::post('user/follow/{f_user_id}', 'ContactController@followDeprecated');
-        Route::post('user/unfollow/{f_user_id}', 'ContactController@unfollowDeprecated');
+        Route::get('user/follow', 'UserController@getFollow');
+        Route::post('user/follow/{f_user_id}', 'UserController@follow');
+        Route::post('user/unfollow/{f_user_id}', 'UserController@unfollow');
 
         Route::get('contact', 'ContactController@getContacts');
         Route::get('contact/{f_user_id}', 'ContactController@getContact');
@@ -47,6 +45,7 @@ Route::group(['prefix' => 'api/v1'], function() {
         Route::post('user/group/{group_id}/invite', 'GroupController@invite');
 
         Route::get('user/find', 'UserController@findUsers');
+        Route::get('user/profile', 'UserController@getUserProfile');
         Route::post('user/profile', 'UserController@editUserProfile');
         Route::post('user/profile/avatar', 'UserController@editUserAvatar');
         Route::get('user/profile/avatar', 'UserController@getUserAvatar');

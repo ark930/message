@@ -34,7 +34,8 @@ class UserController extends BaseController
 
         $user = User::where('tel', $username)->first();
         if(empty($user)) {
-            User::create(['tel' => $username, 'api_token' => str_random(24)]);
+            $api_token_length = config('message.api_token_length');
+            User::create(['tel' => $username, 'api_token' => str_random($api_token_length)]);
         }
         
         $verify_code_refresh_time = strtotime($user['verify_code_refresh_at']);
