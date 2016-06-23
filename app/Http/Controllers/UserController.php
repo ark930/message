@@ -70,8 +70,8 @@ class UserController extends BaseController
         $this->validateParams($request->all(), [
             'username' => 'required|exists:users,tel',
             'verify_code' => 'required',
-//            'ip' => 'required',
-//            'client' => 'required',
+            'ip' => 'required',
+            'client' => 'required',
         ]);
 
         $username = $request->input('username');
@@ -88,15 +88,19 @@ class UserController extends BaseController
             throw new BadRequestException('验证码失效, 请重新获取', 400);
         }
 
+        $ip = $request->input('ip');
+        $client = $request->input('client');
+
         $device = $user->devices()
-            ->where('ip', '192.168.3.111')
+            ->where('ip', $ip)
+            ->where('client', $client)
             ->first();
 
         $api_token = str_random(32);
         if(empty($device)) {
             $device = new Device([
-                'ip' => '192.168.3.111',
-                'client' => 'chrome',
+                'ip' => $ip,
+                'client' => $client,
                 'active' => true,
                 'api_token' => $api_token,
             ]);
@@ -324,12 +328,27 @@ class UserController extends BaseController
             throw new BadRequestException('保存文件失败', 400);
         }
 
-        $user->update([
-            'avatar_url' => $savePath
-        ]);
+        $user['avatar_url'] = $savePath;
+        $user->save();
 
-        header("Content-Type: ".Storage::mimeType($savePath));
-        return Storage::get($savePath);
+        return response(Storage::get($savePath))
+            ->header('Content-Type', Storage::mimeType($savePath));
+    }
+
+    /**
+     * 获取用户头像
+     *
+     * @param Request $request
+     * @return mixed
+     */
+    public function getUserAvatar(Request $request)
+    {
+        $user = $this->user();
+
+        $avatar_url = $user['avatar_url'];
+
+        return response(Storage::get($avatar_url))
+            ->header('Content-Type', Storage::mimeType($avatar_url));
     }
 
     /**
@@ -369,6 +388,7 @@ class UserController extends BaseController
         $devices = $user->devices->where('active', 1);
 
         $currentApiToken = $request->header('Authorization');
+        $currentApiToken = explode(' ', $currentApiToken)[1];
 
         $currentDevice = null;
         $otherDevices = [];
@@ -377,12 +397,11 @@ class UserController extends BaseController
             $apiToken = $device['api_token'];
 
             unset($device['api_token']);
-            unset($device['active']);
 
             if($apiToken == $currentApiToken) {
                 $currentDevice = $device;
             } else {
-                $otherDevices = $device;
+                $otherDevices[] = $device;
             }
         }
 
@@ -409,15 +428,13 @@ class UserController extends BaseController
         }
 
         $api_token = $request->header('Authorization');
+        $api_token = explode(' ', $api_token)[1];
 
         if($device['api_token'] == $api_token) {
             throw new BadRequestException('无法注销当前设备', 400);
         }
 
-        Device::where('id', $device_id)
-            ->update([
-                'active' => 0
-            ]);
+        $device->delete();
 
         return response('', 204);
     }

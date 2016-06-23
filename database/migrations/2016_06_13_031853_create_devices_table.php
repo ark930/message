@@ -17,9 +17,9 @@ class CreateDevicesTable extends Migration
             $table->unsignedBigInteger('user_id');
             $table->string('ip', 15);
             $table->string('client', 256);
-            $table->boolean('active')->default(false);
             $table->string('api_token', 32)->collation('utf8_bin');
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 
