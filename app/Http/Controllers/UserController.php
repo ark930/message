@@ -34,8 +34,7 @@ class UserController extends BaseController
 
         $user = User::where('tel', $username)->first();
         if(empty($user)) {
-            $api_token_length = config('message.api_token_length');
-            User::create(['tel' => $username, 'api_token' => str_random($api_token_length)]);
+            User::create(['tel' => $username]);
         }
         
         $verify_code_refresh_time = strtotime($user['verify_code_refresh_at']);
@@ -45,18 +44,16 @@ class UserController extends BaseController
         }
 
         $verify_code = mt_rand(100000, 999999);
-        User::where('tel', $username)
-            ->update([
-                'verify_code' => $verify_code,
-                'verify_code_refresh_at' => date('Y-m-d H:i:s', strtotime("+1 minute")),
-                'verify_code_expire_at' => date('Y-m-d H:i:s', strtotime("+5 minutes")),
-            ]);
+        $user['verify_code'] = $verify_code;
+        $user['verify_code_refresh_at'] = date('Y-m-d H:i:s', strtotime("+1 minute"));
+        $user['verify_code_expire_at'] = date('Y-m-d H:i:s', strtotime("+5 minutes"));
+        $user->save();
 
         // 发送验证码短信
         $message = "【云片网】您的验证码是$verify_code";
         $SMS->SendSMS($username, $message);
 
-        return response()->json(['msg' => 'success']);
+        return response('', 204);
     }
 
     /**
@@ -97,7 +94,8 @@ class UserController extends BaseController
             ->where('client', $client)
             ->first();
 
-        $api_token = str_random(32);
+        $api_token_length = config('message.api_token_length');
+        $api_token = str_random($api_token_length);
         if(empty($device)) {
             $device = new Device([
                 'ip' => $ip,
@@ -109,9 +107,13 @@ class UserController extends BaseController
         }
         $device->save();
 
+        $now = date('Y-m-d H:i:s', time());
+        if(empty($user['first_login_at'])) {
+            $user['first_login_at'] = $now;
+        }
         // 登录成功后, 验证码立即失效
         $user['verify_code_expire_at'] = null;
-        $user['last_login_at'] = date('Y-m-d H:i:s', time());
+        $user['last_login_at'] = $now;
         $user->save();
 
         $user['api_token'] = $api_token;
@@ -418,6 +420,10 @@ class UserController extends BaseController
     public function findUsers(Request $request)
     {
         $name = $request->input('name');
+
+        $this->validateParams(compact('name'), [
+            'name' => 'required',
+        ]);
 
         $users = User::where('tel', 'like', "%$name%")
             ->orWhere('display_name', 'like', "%$name%")

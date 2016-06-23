@@ -404,6 +404,7 @@ class ContactController extends BaseController
                 'tel' => $tel,
                 'avatar_path' => $user['avatar_url'],
                 'conv_id' => $contact['conv_id'],
+                'last_login_at' => $user['last_login_at'],
             ];
         }
 
@@ -442,6 +443,7 @@ class ContactController extends BaseController
             'tel' => $tel,
             'avatar_path' => $user['avatar_url'],
             'conv_id' => $contact['conv_id'],
+            'last_login_at' => $user['last_login_at'],
         ];
     }
 
