@@ -47,12 +47,12 @@ Route::group(['prefix' => 'api/v1'], function() {
         Route::post('user/group/{group_id}/invite', 'GroupController@invite');
 
         Route::get('user/find', 'UserController@findUsers');
+        Route::post('user/profile', 'UserController@editUserProfile');
         Route::post('user/profile/avatar', 'UserController@editUserAvatar');
         Route::get('user/profile/avatar', 'UserController@getUserAvatar');
         Route::get('user/profile/avatar/{avatar_name}', 'UserController@getAvatarByName');
 //        Route::get('user/preference', 'UserController@editPreference');
         Route::post('user/preference', 'UserController@editPreference');
-
         Route::get('user/device', 'UserController@activeDeviceList');
         Route::post('user/device/{device_id}/logout', 'UserController@logoutDevice');
 

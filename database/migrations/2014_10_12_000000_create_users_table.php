@@ -21,10 +21,10 @@ class CreateUsersTable extends Migration
             $table->string('avatar_url', 1024)->nullable();
             $table->enum('type', ['person', 'bot']);
             $table->boolean('searchable')->default(true);
+            $table->timestamp('last_login_at')->nullable();
             $table->string('verify_code', 16)->nullable();
             $table->timestamp('verify_code_expire_at')->nullable();
             $table->timestamp('verify_code_refresh_at')->nullable();
-            $table->timestamp('last_login_at')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

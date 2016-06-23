@@ -106,11 +106,12 @@ class UserController extends BaseController
         } else {
             $device['api_token'] = $api_token;
         }
-        $device = $user->devices()->save($device);
-        
+        $device->save();
+
         // 登录成功后, 验证码立即失效
-//        User::where('tel', $username)
-//            ->update(['verify_code_expire_at' => null]);
+        $user['verify_code_expire_at'] = null;
+        $user['last_login_at'] = date('Y-m-d H:i:s', time());
+        $user->save();
 
         $user['api_token'] = $api_token;
 
@@ -120,6 +121,7 @@ class UserController extends BaseController
     /**
      * 注册
      *
+     * @deprecated
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
@@ -287,12 +289,39 @@ class UserController extends BaseController
     }
 
     /**
-     * 编辑本用户个人信息
+     * 编辑个人信息
+     *
      * @param Request $request
+     * @return \Illuminate\Contracts\Routing\ResponseFactory|\Symfony\Component\HttpFoundation\Response
      */
     public function editUserProfile(Request $request)
     {
+        $user = $this->user();
 
+        $username = $request->input('username');
+        $display_name = $request->input('display_name');
+        $email = $request->input('email');
+        $tel = $request->input('tel');
+
+        if(!empty($username)) {
+            $user['user_name'] = $username;
+        }
+
+        if(!empty($display_name)) {
+            $user['display_name'] = $display_name;
+        }
+
+        if(!empty($email)) {
+            $user['email'] = $email;
+        }
+
+        if(!empty($tel)) {
+            $user['tel'] = $tel;
+        }
+
+        $user->save();
+
+        return response('', 204);
     }
 
     /**
