@@ -34,7 +34,7 @@ class UserController extends BaseController
 
         $user = User::where('tel', $username)->first();
         if(empty($user)) {
-            User::create(['tel' => $username]);
+            $user = User::create(['tel' => $username]);
         }
         
         $verify_code_refresh_time = strtotime($user['verify_code_refresh_at']);
