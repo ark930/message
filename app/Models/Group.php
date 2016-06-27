@@ -16,7 +16,7 @@ class Group extends Model
      * @var array
      */
     protected $fillable = [
-        'name', 'type', 'conv_id',
+        'name', 'avatar_url', 'conv_id',
     ];
     
     public function users()

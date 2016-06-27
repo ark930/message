@@ -15,7 +15,7 @@ class CreateGroupsTable extends Migration
         Schema::create('groups', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('name', 128);
-            $table->enum('type', ['private', 'group']);
+            $table->string('avatar_url', 1024)->nullable();
             $table->string('conv_id', 60);
             $table->timestamps();
             $table->softDeletes();
