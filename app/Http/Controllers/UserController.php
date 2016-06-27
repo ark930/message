@@ -323,9 +323,34 @@ class UserController extends BaseController
             $user['tel'] = $tel;
         }
 
+        $display_name = $user->getDisplayName();
+        if(empty($user['avatar_url'])) {
+            require(dirname(__FILE__) . "/md/MaterialDesign.Avatars.class.php");
+
+            $avatar_word = mb_substr($display_name, 0, 1);
+            $avatar = new \Md\MDAvatars($avatar_word);
+            $newFileName = sha1(time().rand(0,10000)).'.png';
+            $savePath = 'avatar/'.$newFileName;
+            $tmpPath = '/tmp/'.$newFileName;
+            $avatar->Save($tmpPath);
+            $avatar->Free();
+
+            $bytes = Storage::put(
+                $savePath,
+                file_get_contents($tmpPath)
+            );
+
+            if(!Storage::exists($savePath)) {
+                throw new BadRequestException('保存文件失败', 400);
+            }
+
+            unlink($tmpPath);
+            $user['avatar_url'] = $savePath;
+        }
+
         $user->save();
 
-        return response('', 204);
+        return response('', 200);
     }
 
     /**
@@ -527,6 +552,28 @@ class UserController extends BaseController
 
         $user['searchable'] = $searchable;
         $user->save();
+
+        return response('', 204);
+    }
+
+    /**
+     * 删除用户
+     *
+     * 用户手动删除, 解绑设备和手机
+     *
+     * @param Request $request
+     * @return \Illuminate\Contracts\Routing\ResponseFactory|\Symfony\Component\HttpFoundation\Response
+     */
+    public function delete(Request $request)
+    {
+        $user = $this->user();
+
+        $devices = $user->devices;
+        foreach ($devices as $device) {
+            $device->delete();
+        }
+
+        $user->delete();
 
         return response('', 204);
     }

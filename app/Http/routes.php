@@ -37,12 +37,19 @@ Route::group(['prefix' => 'api/v1'], function() {
         Route::post('contact/{f_user_id}/star', 'ContactController@star');
         Route::post('contact/{f_user_id}/unstar', 'ContactController@unstar');
 
-        Route::get('user/group', 'GroupController@show');
-        Route::post('user/group/create', 'GroupController@createGroup');
-        Route::post('user/group/{group_id}/join', 'GroupController@join');
-        Route::post('user/group/{group_id}/quit', 'GroupController@quit');
-        Route::post('user/group/{group_id}/dismiss', 'GroupController@dismiss');
-        Route::post('user/group/{group_id}/invite', 'GroupController@invite');
+        Route::get('group', 'GroupController@getGroups');
+        Route::get('group/{group_id}', 'GroupController@getGroup');
+        Route::post('group/{group_id}', 'GroupController@editGroup');
+        Route::post('group/{group_id}/avatar', 'GroupController@editGroupAvatar');
+        Route::post('group', 'GroupController@createGroup');
+        Route::post('group/{group_id}/join', 'GroupController@join');
+        Route::post('group/{group_id}/quit', 'GroupController@quit');
+        Route::post('group/{group_id}/dismiss', 'GroupController@dismiss');
+        Route::post('group/{group_id}/invite', 'GroupController@invite');
+        Route::post('group/{group_id}/apply', 'GroupController@apply');
+        Route::post('group/{group_id}/user/{user_id}/apply/{result}', 'GroupController@handleApplication');
+        Route::post('group/{group_id}/invite/{result}', 'GroupController@handleInvitation');
+        Route::post('group/{group_id}/user/{user_id}/remove', 'GroupController@remove');
 
         Route::get('user/find', 'UserController@findUsers');
         Route::get('user/profile', 'UserController@getUserProfile');
@@ -54,6 +61,7 @@ Route::group(['prefix' => 'api/v1'], function() {
         Route::post('user/preference', 'UserController@editPreference');
         Route::get('user/device', 'UserController@activeDeviceList');
         Route::post('user/device/{device_id}/logout', 'UserController@logoutDevice');
+        Route::delete('user', 'UserController@delete');
 
         Route::post('message', 'MessageController@sendMessage');
         Route::get('message', 'MessageController@getMessage');
@@ -69,4 +77,6 @@ Route::group([], function() {
     Route::get('im', 'Page\IMController@main');
 
     Route::get('dhc', 'TestController@dhc');
+
+    Route::get('test', 'TestController@index');
 });
