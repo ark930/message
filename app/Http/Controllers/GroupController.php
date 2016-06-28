@@ -65,7 +65,7 @@ class GroupController extends BaseController
     {
         $owner_user_id = $this->user_id();
 
-        $group_name = $request->input('group_name');
+        $display_name = $request->input('display_name');
         $members = $request->input('members');
 
         $this->validateParams($request->all(), [
@@ -87,26 +87,26 @@ class GroupController extends BaseController
 
             $users[] = $user;
         }
-        $conversation = app('IM')->createConversation($group_name, array_merge([$owner_user_id], $users));
+        $conversation = app('IM')->createConversation($display_name, array_merge([$owner_user_id], $users));
 
         // 默认群名字是前三个成员名字列表，创建时用户也可以自定义群名字。
         $owner_user = $this->user();
-        if(empty($group_name)) {
-            $group_name = $owner_user->getDisplayName();
+        if(empty($display_name)) {
+            $display_name = $owner_user->getDisplayName();
             if(count($users) <= 2) {
                 foreach ($users as $user) {
-                    $group_name .= ', ' . $user->getDisplayName();
+                    $display_name .= ', ' . $user->getDisplayName();
                 }
             } else {
                 for($i = 0; $i < 2; $i++) {
-                    $group_name .= ', ' . $users[$i]->getDisplayName();
+                    $display_name .= ', ' . $users[$i]->getDisplayName();
                 }
             }
         }
 
         require(dirname(__FILE__) . "/md/MaterialDesign.Avatars.class.php");
 
-        $avatar_word = mb_substr($group_name, 0, 1);
+        $avatar_word = mb_substr($display_name, 0, 1);
         $avatar = new \Md\MDAvatars($avatar_word);
         $newFileName = sha1(time().rand(0,10000)).'.png';
         $savePath = 'avatar/group/'.$newFileName;
@@ -126,7 +126,7 @@ class GroupController extends BaseController
         unlink($tmpPath);
 
         $group = new Group();
-        $group['display_name'] = $group_name;
+        $group['display_name'] = $display_name;
         $group['avatar_url'] = $savePath;
         $group['conv_id'] = $conversation['objectId'];
         $group->save();
