@@ -13,9 +13,8 @@
 
 Route::group(['prefix' => 'api/v1'], function() {
     Route::group(['middleware' => 'throttle:10000'], function() {
-        Route::post('register', 'UserController@register');
         Route::post('login', 'UserController@login');
-        Route::post('verifycode', 'UserController@loginVerifyCode');
+        Route::post('verifycode', 'UserController@verifyCode');
     });
 
     Route::group([

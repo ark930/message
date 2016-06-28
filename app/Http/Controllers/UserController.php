@@ -24,7 +24,7 @@ class UserController extends BaseController
      * @return \Illuminate\Http\JsonResponse
      * @throws BadRequestException
      */
-    public function loginVerifyCode(Request $request, SMSServiceContract $SMS)
+    public function verifyCode(Request $request, SMSServiceContract $SMS)
     {
         $this->validateParams($request->all(), [
             'tel' => 'required',
@@ -120,25 +120,6 @@ class UserController extends BaseController
         $user['api_token'] = $api_token;
 
         return $user;
-    }
-
-    /**
-     * 注册
-     *
-     * @deprecated
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function register(Request $request)
-    {
-        $this->validateParams($request->all(), [
-            'username' => 'required|unique:users,tel',
-        ]);
-
-        $username = $request->input('username');
-        User::create(['tel' => $username, 'api_token' => str_random(24)]);
-
-        return response()->json(['msg' => 'success']);
     }
 
     /**
@@ -297,6 +278,7 @@ class UserController extends BaseController
      *
      * @param Request $request
      * @return \Illuminate\Contracts\Routing\ResponseFactory|\Symfony\Component\HttpFoundation\Response
+     * @throws BadRequestException
      */
     public function editUserProfile(Request $request)
     {
@@ -491,6 +473,7 @@ class UserController extends BaseController
             $apiToken = $device['api_token'];
 
             unset($device['api_token']);
+            unset($device['deleted_at']);
 
             if($apiToken == $currentApiToken) {
                 $currentDevice = $device;
@@ -559,14 +542,29 @@ class UserController extends BaseController
     /**
      * 删除用户
      *
-     * 用户手动删除, 解绑设备和手机
-     *
+     * 用户手动删除, 删除前需要获取验证码, 解绑设备和手机
+     * 
      * @param Request $request
      * @return \Illuminate\Contracts\Routing\ResponseFactory|\Symfony\Component\HttpFoundation\Response
+     * @throws BadRequestException
      */
     public function delete(Request $request)
     {
         $user = $this->user();
+
+        $this->validateParams($request->all(), [
+            'verify_code' => 'required',
+        ]);
+
+        $verify_code = $request->input('verify_code');
+
+        if(strtotime($user['verify_code_expire_at']) <= time()) {
+            throw new BadRequestException('验证码失效, 请重新获取', 400);
+        }
+        
+        if($user['verify_code'] != $verify_code) {
+            throw new BadRequestException('验证码不正确', 400);
+        }
 
         $devices = $user->devices;
         foreach ($devices as $device) {
