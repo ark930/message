@@ -15,7 +15,7 @@ class GroupsTableSeeder extends Seeder
         for($i = 1; $i <= 3; $i++) {
             $groupName = "用户组$i";
             DB::table('groups')->insert([
-                'name' => $groupName,
+                'display_name' => $groupName,
                 'conv_id' => str_random(24),
                 'created_at' => date('Y-m-d H:i:s'),
                 'updated_at' => date('Y-m-d H:i:s'),
