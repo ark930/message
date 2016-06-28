@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Storage;
 use App\Exceptions\BadRequestException;
 use App\Models\Group;
 use App\Models\User;
@@ -23,6 +24,11 @@ class GroupController extends BaseController
 
         $groups = $user->groups;
 
+        foreach ($groups as &$group) {
+            unset($group['pivot']);
+            unset($group['deleted_at']);
+        }
+
         return $groups;
     }
 
@@ -36,7 +42,10 @@ class GroupController extends BaseController
     {
         $user = $this->user();
 
-        $group = $user->groups->where('id', $group_id);
+        $group = $user->groups->where('id', intval($group_id))->first();
+
+        unset($group['pivot']);
+        unset($group['deleted_at']);
 
         return $group;
     }
@@ -48,37 +57,85 @@ class GroupController extends BaseController
      * 必须选择除了自己外的至少一人
      * 默认群名字是前三个成员名字列表，创建时用户也可以自定义群名字
      * 默认头像是前三个成员的头像集
-     *
      * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
+     * @return Group
+     * @throws BadRequestException
      */
-    public function createGroup(Request $request)
+    public function create(Request $request)
     {
-        $user_id = $this->user_id();
-
-        $this->validateParams($request->all(), [
-            'group_name' => 'required',
-            'members' => 'required',
-        ]);
+        $owner_user_id = $this->user_id();
 
         $group_name = $request->input('group_name');
         $members = $request->input('members');
 
-        $conversation = app('IM')->createConversation($group_name, [$user_id]);
+        $this->validateParams($request->all(), [
+            'members' => 'required',
+        ]);
+
+        $members = array_unique($members);
+
+        $users = [];
+        foreach ($members as $user_id) {
+            if($owner_user_id == $user_id) {
+                throw new BadRequestException("存在非法的 User ID", 400);
+            }
+            
+            $user = User::find($user_id);
+            if(empty($user)) {
+                throw new BadRequestException("存在非法的 User ID", 400);
+            }
+
+            $users[] = $user;
+        }
+        $conversation = app('IM')->createConversation($group_name, array_merge([$owner_user_id], $users));
+
+        // 默认群名字是前三个成员名字列表，创建时用户也可以自定义群名字。
+        $owner_user = $this->user();
+        if(empty($group_name)) {
+            $group_name = $owner_user->getDisplayName();
+            if(count($users) <= 2) {
+                foreach ($users as $user) {
+                    $group_name .= ', ' . $user->getDisplayName();
+                }
+            } else {
+                for($i = 0; $i < 2; $i++) {
+                    $group_name .= ', ' . $users[$i]->getDisplayName();
+                }
+            }
+        }
+
+        require(dirname(__FILE__) . "/md/MaterialDesign.Avatars.class.php");
+
+        $avatar_word = mb_substr($group_name, 0, 1);
+        $avatar = new \Md\MDAvatars($avatar_word);
+        $newFileName = sha1(time().rand(0,10000)).'.png';
+        $savePath = 'avatar/group/'.$newFileName;
+        $tmpPath = '/tmp/'.$newFileName;
+        $avatar->Save($tmpPath);
+        $avatar->Free();
+
+        $bytes = Storage::put(
+            $savePath,
+            file_get_contents($tmpPath)
+        );
+
+        if(!Storage::exists($savePath)) {
+            throw new BadRequestException('保存文件失败', 400);
+        }
+
+        unlink($tmpPath);
 
         $group = new Group();
-        $group->name = $group_name;
-        $group->avatar_url = null;
-        $group->conv_id = $conversation['objectId'];
+        $group['display_name'] = $group_name;
+        $group['avatar_url'] = $savePath;
+        $group['conv_id'] = $conversation['objectId'];
         $group->save();
 
-        $user = $this->user();
-        $user->groups()->attach($group->id, [
+        $owner_user->groups()->attach($group->id, [
             'role' => 'owner',
         ]);
 
-        foreach ($members as $user_id) {
-            User::find($user_id);
+        foreach ($users as $user) {
             $user->groups()->attach($group->id, [
                 'role' => 'member',
             ]);
@@ -111,18 +168,30 @@ class GroupController extends BaseController
      * 退出群
      *
      * @param $group_id
-     * @return string
+     * @return \Illuminate\Contracts\Routing\ResponseFactory|\Symfony\Component\HttpFoundation\Response
+     * @throws BadRequestException
      */
     public function quit($group_id)
     {
         $user_id = $this->user_id();
         $user = $this->user();
 
-        $user->groups()->detach($group_id);
+        $userGroup = UserGroup::where('group_id', $group_id)
+            ->where('user_id', $user_id)
+            ->first();
+        if(empty($userGroup)) {
+            throw new BadRequestException("操作异常", 400);
+        }
 
+        if($this->isGroupOwner($group_id) == true) {
+            throw new BadRequestException("群主无法退出", 400);
+        }
+        
         $group = Group::find($group_id);
         $conversationId = $group['conv_id'];
         app('IM')->removeMemberToConversation($conversationId, [$user_id]);
+
+        $user->groups()->detach($group_id);
 
         return response('', 204);
     }
@@ -140,7 +209,7 @@ class GroupController extends BaseController
             throw new BadRequestException("该用户没有权限进行这样的操作", 400);
         }
 
-        $userGroup = UserGroup::where('group', $group_id)
+        $userGroup = UserGroup::where('group_id', $group_id)
             ->where('user_id', $user_id)
             ->first();
 
@@ -151,7 +220,7 @@ class GroupController extends BaseController
         $owner_user_id = $this->user_id();
         $user = User::find($user_id);
         $user->groups()->attach($group_id, [
-            'role' => 'invitee',
+            'role' => 'member',
             'inviter_user_id' => $owner_user_id,
         ]);
 
@@ -178,7 +247,15 @@ class GroupController extends BaseController
             throw new BadRequestException("无法对自己进行操作", 400);
         }
 
-        UserGroup::where('group', $group_id)
+        $userGroup = UserGroup::where('group_id', $group_id)
+            ->where('user_id', $user_id)
+            ->first();
+
+        if(empty($userGroup)) {
+            throw new BadRequestException("操作异常", 400);
+        }
+
+        UserGroup::where('group_id', $group_id)
             ->where('user_id', $user_id)
             ->delete();
 
@@ -186,7 +263,7 @@ class GroupController extends BaseController
     }
 
     /**
-     * 用户申请加入群
+     * 申请加入群
      *
      * @param Request $request
      * @param $group_id
@@ -197,12 +274,17 @@ class GroupController extends BaseController
     {
         $user_id = $this->user_id();
 
-        $userGroup = UserGroup::where('group', $group_id)
+        $userGroup = UserGroup::where('group_id', $group_id)
             ->where('user_id', $user_id)
             ->first();
 
         if(!empty($userGroup)) {
             throw new BadRequestException("操作异常", 400);
+        }
+
+        $group = Group::find($group_id);
+        if(empty($group)) {
+            throw new BadRequestException("群 ID 不存在", 400);
         }
 
         $user = User::find($user_id);
@@ -228,7 +310,7 @@ class GroupController extends BaseController
             throw new BadRequestException("该用户没有权限进行这样的操作", 400);
         }
 
-        $userGroup = UserGroup::where('group', $group_id)
+        $userGroup = UserGroup::where('group_id', $group_id)
             ->where('user_id', $user_id)
             ->where('role', 'applicant')
             ->first();
@@ -260,7 +342,7 @@ class GroupController extends BaseController
     public function handleInvitation($group_id, $result)
     {
         $user_id = $this->user_id();
-        $userGroup = UserGroup::where('group', $group_id)
+        $userGroup = UserGroup::where('group_id', $group_id)
             ->where('user_id', $user_id)
             ->where('role', 'invitee')
             ->first();
@@ -298,6 +380,10 @@ class GroupController extends BaseController
         $display_name = $request->input('display_name');
 
         $group = Group::find($group_id);
+        if(empty($group)) {
+            throw new BadRequestException("该用户没有权限进行这样的操作", 400);
+        }
+
         if(!empty($display_name)) {
             $group['display_name'] = $display_name;
         }
@@ -322,6 +408,9 @@ class GroupController extends BaseController
         }
 
         $group = Group::find($group_id);
+        if(empty($group)) {
+            throw new BadRequestException("该用户没有权限进行这样的操作", 400);
+        }
 
         $old_avatar_url = $group['avatar_url'];
 
@@ -369,7 +458,12 @@ class GroupController extends BaseController
             throw new BadRequestException("该用户没有权限进行这样的操作", 400);
         }
 
-        Group::find($group_id)->delete();
+        $group = Group::find($group_id);
+
+        if(empty($group)) {
+            throw new BadRequestException("该用户没有权限进行这样的操作", 400);
+        }
+        $group->delete();
         
         return response('', 204);
     }

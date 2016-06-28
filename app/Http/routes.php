@@ -41,7 +41,7 @@ Route::group(['prefix' => 'api/v1'], function() {
         Route::get('group/{group_id}', 'GroupController@getGroup');
         Route::post('group/{group_id}', 'GroupController@editGroup');
         Route::post('group/{group_id}/avatar', 'GroupController@editGroupAvatar');
-        Route::post('group', 'GroupController@createGroup');
+        Route::post('group', 'GroupController@create');
         Route::post('group/{group_id}/join', 'GroupController@join');
         Route::post('group/{group_id}/quit', 'GroupController@quit');
         Route::post('group/{group_id}/dismiss', 'GroupController@dismiss');
