@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Contact;
 use Storage;
+use App\Services\IMService;
 use App\Contracts\SMSServiceContract;
 use App\Exceptions\BadRequestException;
 use App\Models\Device;
@@ -24,7 +26,7 @@ class UserController extends BaseController
      * @return \Illuminate\Http\JsonResponse
      * @throws BadRequestException
      */
-    public function verifyCode(Request $request, SMSServiceContract $SMS)
+    public function verifyCode(Request $request, SMSServiceContract $SMS, IMService $IM)
     {
         $this->validateParams($request->all(), [
             'tel' => 'required',
@@ -35,6 +37,22 @@ class UserController extends BaseController
         $user = User::where('tel', $username)->first();
         if(empty($user)) {
             $user = User::create(['tel' => $username]);
+            $user_id = $user['id'];
+
+            // 双方互不关注时, 创建对话
+            $group_name = "私聊: $user_id, 1";
+            $conversation = $IM->createConversation($group_name, [$user_id, 1]);
+            $conv_id = $conversation['objectId'];
+
+            // 关联系统机器人
+            $systemBotContact = new Contact();
+            $systemBotContact['user_id'] = $user_id;
+            $systemBotContact['contact_user_id'] = 1;
+            $systemBotContact['contact_tel_visible'] = false;
+            $systemBotContact['relation'] = 'follow';
+            $systemBotContact['conv_id'] = $conv_id;
+            $systemBotContact['conv_type'] = 'normal';
+            $systemBotContact->save();
         }
         
         $verify_code_refresh_time = strtotime($user['verify_code_refresh_at']);
@@ -44,16 +62,39 @@ class UserController extends BaseController
         }
 
         $verify_code = mt_rand(100000, 999999);
+        $verify_code_refresh_at = date('Y-m-d H:i:s', strtotime("+1 minute"));
+        $verify_code_expire_at = date('Y-m-d H:i:s', strtotime("+5 minute"));
+
         $user['verify_code'] = $verify_code;
-        $user['verify_code_refresh_at'] = date('Y-m-d H:i:s', strtotime("+1 minute"));
-        $user['verify_code_expire_at'] = date('Y-m-d H:i:s', strtotime("+5 minutes"));
+        $user['verify_code_refresh_at'] = $verify_code_refresh_at;
+        $user['verify_code_expire_at'] = $verify_code_expire_at;
         $user->save();
 
-        // 发送验证码短信
-        $message = "【云片网】您的验证码是$verify_code";
-        $SMS->SendSMS($username, $message);
+        $devices = $user->devices;
+        if($devices->isEmpty()) {
+            // 向手机发送验证码短信
+            $message = "【云片网】您的验证码是$verify_code";
+            $SMS->SendSMS($username, $message);
 
-        return response('', 204);
+            return response(['msg' => '验证码已发送至手机, 请注意查收'], 200);
+        } else {
+            // 向客户端发送验证码
+            $user_id = $user['id'];
+            $systemBotContact = Contact::where('user_id', $user_id)
+                ->where('contact_user_id', 1)
+                ->first();
+
+            if($systemBotContact['conv_type'] == 'none') {
+                $systemBotContact['conv_type'] = 'normal';
+                $systemBotContact->save();
+            }
+            $systemBotConvId = $systemBotContact['conv_id'];
+
+            $message = "您的验证码是$verify_code";
+            $IM->sendMessage(1, $systemBotConvId, $message);
+
+            return response(['msg' => '验证码已发送至客户端, 请注意查收'], 200);
+        }
     }
 
     /**
@@ -114,6 +155,7 @@ class UserController extends BaseController
         }
         // 登录成功后, 验证码立即失效
         $user['verify_code_expire_at'] = null;
+        $user['verify_code_refresh_at'] = null;
         $user['last_login_at'] = $now;
         $user->save();
 
