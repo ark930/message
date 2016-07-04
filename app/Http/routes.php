@@ -26,6 +26,9 @@ Route::group(['prefix' => 'api/v1'], function() {
         Route::post('user/follow/{f_user_id}', 'UserController@follow');
         Route::post('user/unfollow/{f_user_id}', 'UserController@unfollow');
 
+        Route::post('contact/batch_upload', 'ContactController@batchUploadContacts');
+        Route::get('contact/conversation', 'ContactController@conversationList');
+        Route::post('contact/{f_user_id}/conversation/{conv_type}', 'ContactController@setConversation');
         Route::get('contact', 'ContactController@getContacts');
         Route::get('contact/{f_user_id}', 'ContactController@getContact');
         Route::post('contact/{f_user_id}', 'ContactController@editContact');
@@ -78,4 +81,5 @@ Route::group([], function() {
     Route::get('dhc', 'TestController@dhc');
 
     Route::get('test', 'TestController@index');
+    Route::get('repo', 'TestController@repo');
 });

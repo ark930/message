@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Exceptions\BadRequestException;
 use App\Models\Contact;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 use App\Http\Requests;
@@ -403,6 +404,7 @@ class ContactController extends BaseController
                 'display_name' => $display_name,
                 'tel' => $tel,
                 'avatar_path' => $user['avatar_url'],
+                'type' => $user['type'],
                 'conv_id' => $contact['conv_id'],
                 'last_login_at' => $user['last_login_at'],
             ];
@@ -442,6 +444,7 @@ class ContactController extends BaseController
             'display_name' => $display_name,
             'tel' => $tel,
             'avatar_path' => $user['avatar_url'],
+            'type' => $user['type'],
             'conv_id' => $contact['conv_id'],
             'last_login_at' => $user['last_login_at'],
         ];
@@ -471,6 +474,134 @@ class ContactController extends BaseController
             $contact['contact_display_name'] = $display_name;
         }
         $contact->save();
+
+        return response('', 204);
+    }
+
+    /**
+     * 上传本地联系人
+     *
+     * @param Request $request
+     * @return \Illuminate\Contracts\Routing\ResponseFactory|\Symfony\Component\HttpFoundation\Response
+     * @throws BadRequestException
+     */
+    public function batchUploadContacts(Request $request)
+    {
+        $user_id = $this->user_id();
+
+        $contacts = $request->all();
+
+        foreach ($contacts as $c) {
+            if(empty($c['tel'])) {
+                throw new BadRequestException('参数错误', 400);
+            }
+        }
+
+        foreach ($contacts as $c) {
+            $tel = $c['tel'];
+            $display_name = !empty($c['display_name']) ? $c['display_name'] : null;
+
+            $user = User::where('tel', $tel)->first();
+            if(empty($user)) {
+                $user = User::create(['tel' => $tel]);
+            }
+            $contact_user_id = $user['id'];
+
+            $contact = Contact::where('user_id', $user_id)
+                ->where('contact_user_id', $contact_user_id)
+                ->first();
+
+            if(empty($contact)) {
+                $group_name = "私聊: $user_id, $contact_user_id";
+                $conversation = app('IM')->createConversation($group_name, [$user_id, $contact_user_id]);
+                $conv_id = $conversation['objectId'];
+
+                $contact = new Contact();
+                $contact['user_id'] = $user_id;
+                $contact['contact_user_id'] = $contact_user_id;
+                $contact['contact_display_name'] = !empty($display_name) ? $display_name : null;
+                $contact['contact_tel_visible'] = true;
+                $contact['relation'] = 'follow';
+                $contact['conv_id'] = $conv_id;
+                $contact->save();
+            }
+        }
+
+        return response('', 204);
+    }
+
+    /**
+     * 获取对话列表
+     *
+     * @param Request $request
+     * @return array
+     */
+    public function conversationList(Request $request)
+    {
+        $user_id = $this->user_id();
+
+        $contacts = Contact::where('user_id', $user_id)
+            ->where('conv_type', '!=', 'none')
+            ->get();
+
+        $res = [
+            'normal' => [],
+            'sticky' => [],
+            'archive' => [],
+        ];
+        foreach ($contacts as $contact) {
+            $convType = $contact['conv_type'];
+            $user = $contact->contact;
+            $display_name = $contact->getDisplayName();
+            $tel = null;
+
+            if($contact['contact_tel_visible']) {
+                $tel = $user['tel'];
+            }
+
+            $res[$convType][] = [
+                'use_id' => $contact['contact_user_id'],
+                'display_name' => $display_name,
+                'tel' => $tel,
+                'avatar_path' => $user['avatar_url'],
+                'type' => $user['type'],
+                'conv_id' => $contact['conv_id'],
+                'last_login_at' => $user['last_login_at'],
+            ];
+        }
+
+        return $res;
+    }
+
+    /**
+     * 设置对话属性
+     *
+     * @param Request $request
+     * @param $f_user_id
+     * @param $conv_type
+     * @return \Illuminate\Contracts\Routing\ResponseFactory|\Symfony\Component\HttpFoundation\Response
+     * @throws BadRequestException
+     */
+    public function setConversation(Request $request, $f_user_id, $conv_type)
+    {
+        $user_id = $this->user_id();
+
+        $this->basicValidate($user_id, $f_user_id);
+
+        if(!in_array($conv_type, ['normal', 'sticky', 'archive'])) {
+            throw new BadRequestException('操作异常', 400);
+        }
+
+        $contact = Contact::where('user_id', $user_id)
+            ->where('contact_user_id', $f_user_id)
+            ->first();
+
+        if(empty($contact)) {
+            throw new BadRequestException('操作异常', 400);
+        } else {
+            $contact['conv_type'] = $conv_type;
+            $contact->save();
+        }
 
         return response('', 204);
     }
