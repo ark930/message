@@ -33,6 +33,13 @@ class UserController extends BaseController
         ]);
 
         $username = $request->input('tel');
+        $receiver = $request->input('receiver');
+
+        if(!empty($receiver)) {
+            if(!in_array($receiver, ['phone'])) {
+                throw new BadRequestException('参数错误', 400);
+            }
+        }
 
         $user = User::where('tel', $username)->first();
         if(empty($user)) {
@@ -71,7 +78,7 @@ class UserController extends BaseController
         $user->save();
 
         $devices = $user->devices;
-        if($devices->isEmpty()) {
+        if($devices->isEmpty() || $receiver == 'phone') {
             // 向手机发送验证码短信
             $message = "【云片网】您的验证码是$verify_code";
             $SMS->SendSMS($username, $message);
