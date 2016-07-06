@@ -36,7 +36,7 @@ class UserController extends BaseController
         $receiver = $request->input('receiver');
 
         if(!empty($receiver)) {
-            if(!in_array($receiver, ['phone'])) {
+            if(!in_array($receiver, ['phone', 'auto'])) {
                 throw new BadRequestException('参数错误', 400);
             }
         }
