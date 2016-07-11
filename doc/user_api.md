@@ -46,6 +46,14 @@
 | device_id | 是 | 设备 ID |
 ----
 
+### 注销当前设备
+#### 请求
+> POST /api/v1/user/device/logout
+
+#### 请求参数说明
+无
+----
+
 ### 编辑个人信息
 #### 请求
 > POST /api/v1/user/profile
