@@ -566,6 +566,28 @@ class UserController extends BaseController
     }
 
     /**
+     * 注销当前设备
+     *
+     * @param Request $request
+     * @return \Illuminate\Contracts\Routing\ResponseFactory|\Symfony\Component\HttpFoundation\Response
+     */
+    public function logoutCurrentDevice(Request $request)
+    {
+        $currentApiToken = $request->header('Authorization');
+        $currentApiToken = explode(' ', $currentApiToken)[1];
+
+        $device = Device::where('api_token', $currentApiToken)
+            ->first();
+
+        if(!empty($device)) {
+            $device->delete();
+        }
+
+
+        return response('', 204);
+    }
+
+    /**
      * 偏好设置
      * 
      * @param Request $request

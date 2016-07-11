@@ -63,6 +63,7 @@ Route::group(['prefix' => 'api/v1'], function() {
         Route::post('user/preference', 'UserController@editPreference');
         Route::get('user/device', 'UserController@activeDeviceList');
         Route::post('user/device/{device_id}/logout', 'UserController@logoutDevice');
+        Route::post('user/device/logout', 'UserController@logoutCurrentDevice');
         Route::delete('user', 'UserController@delete');
 
         Route::post('message', 'MessageController@sendMessage');
