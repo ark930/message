@@ -24,7 +24,7 @@ class User extends Authenticatable
      * @var array
      */
     protected $hidden = [
-        'verify_code', 'verify_code_expire_at', 'verify_code_refresh_at', 'deleted_at',
+        'verify_code', 'verify_code_expire_at', 'verify_code_refresh_at', 'verify_code_retry_times', 'deleted_at',
     ];
 
     public function groups()

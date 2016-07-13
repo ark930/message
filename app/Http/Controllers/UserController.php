@@ -71,10 +71,12 @@ class UserController extends BaseController
         $verify_code = mt_rand(100000, 999999);
         $verify_code_refresh_at = date('Y-m-d H:i:s', strtotime("+1 minute"));
         $verify_code_expire_at = date('Y-m-d H:i:s', strtotime("+5 minute"));
+        $verify_code_retry_times = 4;
 
         $user['verify_code'] = $verify_code;
         $user['verify_code_refresh_at'] = $verify_code_refresh_at;
         $user['verify_code_expire_at'] = $verify_code_expire_at;
+        $user['verify_code_retry_times'] = $verify_code_retry_times;
         $user->save();
 
         $devices = $user->devices;
@@ -122,16 +124,28 @@ class UserController extends BaseController
 
         $username = $request->input('tel');
         $verify_code = $request->input('verify_code');
-        $user = User::where('tel', $username)
-            ->where('verify_code', $verify_code)
-            ->first();
+        $user = User::where('tel', $username)->first();
 
         if(empty($user)) {
             throw new BadRequestException('登录失败', 400);
         }
 
         if(strtotime($user['verify_code_expire_at']) <= time()) {
-            throw new BadRequestException('验证码失效, 请重新获取', 400);
+            throw new BadRequestException('验证码过期, 请重新获取', 400);
+        }
+
+        if($user['verify_code_retry_times'] <= 0) {
+            throw new BadRequestException('验证码输入错误次数过多, 已失效, 请重新获取', 400);
+        }
+
+        if($user['verify_code'] != $verify_code) {
+            // 验证码错误, 重试次数减一
+            $verify_code_retry_times = $user['verify_code_retry_times'];
+            $verify_code_retry_times--;
+            $user['verify_code_retry_times'] = $verify_code_retry_times;
+            $user->save();
+
+            throw new BadRequestException('验证码错误', 400);
         }
 
         $ip = $request->input('ip');
@@ -163,6 +177,7 @@ class UserController extends BaseController
         // 登录成功后, 验证码立即失效
         $user['verify_code_expire_at'] = null;
         $user['verify_code_refresh_at'] = null;
+        $user['verify_code_retry_times'] = 0;
         $user['last_login_at'] = $now;
         $user->save();
 
